@@ -1,0 +1,260 @@
+#!/usr/bin/perl
+#
+# dpkg-manifest
+#
+# Copyright © 2017 Felix Lechner <felix.lechner@lease-up.com>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+use strict;
+use warnings;
+
+use feature qw/switch/;
+no warnings 'experimental::smartmatch';
+
+use File::Find::Rule;
+use Fcntl ':mode';
+use File::LibMagic;
+use Digest::SHA;
+
+sub catalog {
+
+    my ($searchDir) = @_;
+
+    my $magic = File::LibMagic->new();
+
+    my $catalog = {};
+    $catalog->{Items} = ();
+
+    my $tally = {};
+    $catalog->{Tally} = $tally;
+
+    $tally->{Size}             = 0;
+    $tally->{Files}            = 0;
+    $tally->{Directories}      = 0;
+    $tally->{Links}            = 0;
+    $tally->{CharacterDevices} = 0;
+    $tally->{BlockDevices}     = 0;
+    $tally->{Fifos}            = 0;
+    $tally->{Sockets}          = 0;
+
+    my $overallSha256State = Digest::SHA->new(256);
+    my $overallSha384State = Digest::SHA->new(384);
+    my $overallSha512State = Digest::SHA->new(512);
+
+    my @ITEMPATHS =
+      sort File::Find::Rule->not( File::Find::Rule->name('.') )->in($searchDir);
+
+    foreach my $systemPath (@ITEMPATHS) {
+        my $catalogPath = './' . substr( $systemPath, 1 + length $searchDir );
+
+        # add path to digest
+        $overallSha256State->add($catalogPath);
+        $overallSha384State->add($catalogPath);
+        $overallSha512State->add($catalogPath);
+
+        my $item = {};
+        $catalog->{Items}{$catalogPath} = $item;
+
+        my (
+            $dev,  $ino,   $mode,  $nlink, $uid,     $gid, $rdev,
+            $size, $atime, $mtime, $ctime, $blksize, $blocks
+        ) = lstat($systemPath);
+
+        $item->{Size}             = $size;
+        $item->{ModificationTime} = $mtime;
+        $item->{Uid}              = $uid;
+        $item->{Gid}              = $gid;
+        $item->{Owner}            = getpwuid $uid;
+        $item->{Group}            = getgrgid $gid;
+        $item->{Permissions}      = sprintf "%04o", S_IMODE($mode);
+
+        if ( S_IFMT($mode) == S_IFREG ) {
+            $item->{Type} = 'File';
+            $tally->{Files} += 1;
+
+            $tally->{Size} += $size;
+
+            my $info = $magic->info_from_filename($systemPath);
+            $item->{Magic}    = $info->{description};
+            $item->{MimeType} = $info->{mime_type};
+            $item->{Encoding} = $info->{encoding};
+
+            # calculate digests
+            my $sha256 = Digest::SHA->new(256)->addfile($systemPath)->b64digest;
+            my $sha384 = Digest::SHA->new(384)->addfile($systemPath)->b64digest;
+            my $sha512 = Digest::SHA->new(512)->addfile($systemPath)->b64digest;
+
+            # add padding
+            $sha256 .= '=' while ( length($sha256) % 4 );
+            $sha384 .= '=' while ( length($sha384) % 4 );
+            $sha512 .= '=' while ( length($sha512) % 4 );
+
+            # store
+            $item->{SHA256} = $sha256;
+            $item->{SHA384} = $sha384;
+            $item->{SHA512} = $sha512;
+
+            # add content to overall digests
+            $overallSha256State->addfile($systemPath);
+            $overallSha384State->addfile($systemPath);
+            $overallSha512State->addfile($systemPath);
+
+            # add other elements represented in manifest
+        }
+        elsif ( S_IFMT($mode) == S_IFDIR ) {
+            $item->{Type} = 'Directory';
+            $tally->{Directories} += 1;
+        }
+        elsif ( S_IFMT($mode) == S_IFLNK ) {
+            $item->{Type} = "Link";
+            $tally->{Links} += 1;
+            
+            my $destination = readlink $systemPath;
+            $item->{Destination} = $destination;
+            $overallSha256State->add($destination);
+            $overallSha384State->add($destination);
+            $overallSha512State->add($destination);
+          }
+        elsif ( S_IFMT($mode) == S_IFCHR ) {
+            $item->{Type} = 'CharacterDevice';
+            $tally->{CharacterDevice} += 1;
+        }
+        elsif ( S_IFMT($mode) == S_IFBLK ) {
+            $item->{Type} = 'BlockDevice';
+            $tally->{BlockDevice} += 1;
+        }
+        elsif ( S_IFMT($mode) == S_IFIFO ) {
+            $item->{Type} = 'Fifo';
+            $tally->{Fifos} += 1;
+        }
+        elsif ( S_IFMT($mode) == S_IFSOCK ) {
+            $item->{Type} = 'Socket';
+            $tally->{Sockets} += 1;
+        }
+        else {
+            die 'Unkown file type';
+        }
+    }
+
+    my $sha256 = $overallSha256State->b64digest;
+    my $sha384 = $overallSha384State->b64digest;
+    my $sha512 = $overallSha512State->b64digest;
+
+    $sha256 .= '=' while ( length($sha256) % 4 );
+    $sha384 .= '=' while ( length($sha384) % 4 );
+    $sha512 .= '=' while ( length($sha512) % 4 );
+
+    $tally->{SHA256} = $sha256;
+    $tally->{SHA384} = $sha384;
+    $tally->{SHA512} = $sha512;
+
+    return $catalog;
+}
+
+my $numArgs = $#ARGV + 1;
+
+my $directory = '.';
+$directory = $ARGV[0] if ( $numArgs == 1 );
+
+my $include_owner       = 0;
+my $include_group       = 0;
+my $include_uid         = 0;
+my $include_gid         = 0;
+my $include_permissions = 0;
+
+my $extra_info = 1;
+
+my $catalog = catalog $directory;
+
+# output results
+
+my $tally = $catalog->{Tally};
+
+print "Manifest-Version: 0\n";
+
+print "Running-Digest: SHA-256 $tally->{SHA256}\n";
+print "Running-Digest: SHA-384 $tally->{SHA384}\n";
+print "Running-Digest: SHA-512 $tally->{SHA512}\n";
+
+print "File-Components: Path Contents\n";
+print "Directory-Components: Path\n";
+print "Link-Components: Path Destination\n";
+
+if ($extra_info) {
+    print "--- for information only ---\n";
+
+    print 'Item-Count: ', scalar keys %{ $catalog->{Items} }, "\n";
+    print "File-Count: $tally->{Files}\n" if $tally->{Files};
+    print "Directory-Count: $tally->{Directories}\n"
+      if $tally->{Directories};
+    print "Link-Count: $tally->{Links}\n" if $tally->{Links};
+    print "Character-Device-Count: $tally->{CharacterDevices}\n"
+      if $tally->{CharacterDevices};
+    print "Block-Device-Count: $tally->{BlockDevices}\n"
+      if $tally->{BlockDevices};
+    print "Fifo-Count: $tally->{Fifos}\n"     if $tally->{Fifos};
+    print "Socket-Count: $tally->{Sockets}\n" if $tally->{Sockets};
+
+    print "Cumulative-Content-Size: $tally->{Size}\n";
+}
+
+foreach my $catalogPath ( sort keys %{ $catalog->{Items} } ) {
+
+    print "\n";
+
+    my $item = $catalog->{Items}{$catalogPath};
+
+    if ( $item->{Type} eq 'File' ) {
+        print "File-Path: $catalogPath\n";
+        print "Content-Digest: SHA-256 $item->{SHA256}\n";
+        print "Content-Digest: SHA-384 $item->{SHA384}\n";
+        print "Content-Digest: SHA-512 $item->{SHA512}\n";
+    }
+    elsif ( $item->{Type} eq 'Directory' ) {
+        print "Directory-Path: $catalogPath\n";
+    }
+    elsif ( $item->{Type} eq 'Link' ) {
+        print "Link-Path: $catalogPath\n";
+        print "Link-Destination: $item->{Destination}\n";
+    }
+    elsif ( $item->{Type} eq 'CharacterDevice' ) {
+        print "Character-Device-Path: $catalogPath\n";
+    }
+    elsif ( $item->{Type} eq 'BlockDevice' ) {
+        print "Block-Device-Path: $catalogPath\n";
+    }
+    elsif ( $item->{Type} eq 'Fifo' ) {
+        print "Fifo-Path: $catalogPath\n";
+    }
+    elsif ( $item->{Type} eq 'Socket' ) {
+        print "Socket-Path: $catalogPath\n";
+    }
+
+    print "Owner: $item->{Owner}\n" if $item->{Owner} && $include_owner;
+    print "Group: $item->{Group}\n" if $item->{Group} && $include_group;
+    print "Uid: $item->{Uid}\n"     if $item->{Uid}   && $include_uid;
+    print "Gid: $item->{Gid}\n"     if $item->{Gid}   && $include_gid;
+
+    print "Permissions: $item->{Permissions}\n"
+      if $item->{Permissions} && $include_permissions;
+
+    if ( $item->{Type} eq 'File' && $extra_info ) {
+        print "--- for information only ---\n";
+        print "Magic: $item->{Magic}\n"        if $item->{Magic};
+        print "Mime-Type: $item->{MimeType}\n" if $item->{MimeType};
+        print "Encoding: $item->{Encoding}\n"  if $item->{Encoding};
+        print "Content-Size: $item->{Size}\n";
+    }
+}
