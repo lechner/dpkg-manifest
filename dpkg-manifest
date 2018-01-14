@@ -72,14 +72,14 @@ my $MIME_TYPE    = q{Mime-Type};
 my $ENCODING     = q{Encoding};
 my $CONTENT_SIZE = q{Content-Size};
 
-my @COMPONENTS = (
+my @FIELD_NAMES = (
     $PATH,        $FILE_TYPE, $CONTENT, $DESTINATION,
     $OWNER,       $GROUP,     $UID,     $GID,
     $PERMISSIONS, $MODIFICATION_TIME,
 );
 
 # SHA digests
-my @SHA_ALGOS = qw{SHA-256 SHA-384 SHA-512};
+my @SHA_ALGORITHMS = qw{SHA-256 SHA-384 SHA-512};
 
 my $MODE_TO_TYPE = {
     S_IFREG()  => $REGULAR,
@@ -114,24 +114,24 @@ sub scan_files {
 
     my $magic = File::LibMagic->new();
 
-    my $overallShaState = {};
-    foreach my $algo (@SHA_ALGOS) {
-        $overallShaState->{$algo} = Digest::SHA->new($algo);
+    my $runningShaState = {};
+    foreach my $algorithm (@SHA_ALGORITHMS) {
+        $runningShaState->{$algorithm} = Digest::SHA->new($algorithm);
     }
 
     # maybe use absolute file names?
 
-    my @ITEMPATHS =
+    my @SYSTEM_PATHS =
       sort File::Find::Rule->not( File::Find::Rule->name(q{.}) )->in($where);
 
-    foreach my $systemPath (@ITEMPATHS) {
+    foreach my $systemPath (@SYSTEM_PATHS) {
 
-        my $cutlength = $where ne q{.} ? 1 + length $where : 0;
-        my $catalogPath = q{./} . substr( $systemPath, $cutlength );
+        my $skip = $where ne q{.} ? length $where : 0;
+        my $catalogPath = q{./} . substr( $systemPath, $skip );
 
         # add path to digests
-        foreach my $algo (@SHA_ALGOS) {
-            $overallShaState->{$algo}->add($catalogPath);
+        foreach my $algorithm (@SHA_ALGORITHMS) {
+            $runningShaState->{$algorithm}->add($catalogPath);
         }
 
         my $item = {};
@@ -153,8 +153,9 @@ sub scan_files {
         $item->{$FILE_TYPE} = $MODE_TO_TYPE->{ S_IFMT($mode) }
           or die "Unknown file type";
 
-        $tally->{ $item->{$FILE_TYPE} } = 0
-          if not defined $tally->{ $item->{$FILE_TYPE} };
+        if ( not defined $tally->{ $item->{$FILE_TYPE} } ) {
+            $tally->{ $item->{$FILE_TYPE} } = 0;
+        }
         $tally->{ $item->{$FILE_TYPE} } += 1;
 
         given ( $item->{$FILE_TYPE} ) {
@@ -169,15 +170,16 @@ sub scan_files {
 
                 # calculate content digests
                 $item->{$CONTENT} = {};
-                foreach my $algo (@SHA_ALGOS) {
-                    $item->{$CONTENT}{$algo} =
-                      pad_base64( Digest::SHA->new($algo)->addfile($systemPath)
+                foreach my $algorithm (@SHA_ALGORITHMS) {
+                    $item->{$CONTENT}{$algorithm} =
+                      pad_base64(
+                        Digest::SHA->new($algorithm)->addfile($systemPath)
                           ->b64digest );
                 }
 
                 # also add content to overall digests
-                foreach my $algo (@SHA_ALGOS) {
-                    $overallShaState->{$algo}->addfile($systemPath);
+                foreach my $algorithm (@SHA_ALGORITHMS) {
+                    $runningShaState->{$algorithm}->addfile($systemPath);
                 }
 
                 # add other elements represented in manifest
@@ -187,11 +189,12 @@ sub scan_files {
             }
 
             when ($LINK) {
-                $tally->{$CONTENT_SIZE} += $size;
+
+                #                $tally->{$CONTENT_SIZE} += $size;
                 my $destination = readlink $systemPath;
                 $item->{$DESTINATION} = $destination;
-                foreach my $algo (@SHA_ALGOS) {
-                    $overallShaState->{$algo}->add($destination);
+                foreach my $algorithm (@SHA_ALGORITHMS) {
+                    $runningShaState->{$algorithm}->add($destination);
                 }
             }
 
@@ -213,9 +216,9 @@ sub scan_files {
         }
     }
 
-    foreach my $algo (@SHA_ALGOS) {
-        $catalog->{$RUNNING_DIGEST}{$algo} =
-          pad_base64( $overallShaState->{$algo}->b64digest );
+    foreach my $algorithm (@SHA_ALGORITHMS) {
+        $catalog->{$RUNNING_DIGEST}{$algorithm} =
+          pad_base64( $runningShaState->{$algorithm}->b64digest );
     }
 
     return $catalog;
@@ -251,14 +254,20 @@ sub write_manifest {
     print "$MANIFEST_VERSION: 0\n";
     print "$TITLE: $title\n" if defined $title;
 
-    foreach my $algo (@SHA_ALGOS) {
-        print_field( $catalog, $RUNNING_DIGEST, $algo );
+    foreach my $algorithm (@SHA_ALGORITHMS) {
+        print_field( $catalog, $RUNNING_DIGEST, $algorithm );
     }
 
     foreach my $file_type (@FILE_TYPES) {
         if ( $tally->{$file_type} ) {
-            print "$DIGEST_COMPONENTS: [$file_type] ",
-              join( " ", @COMPONENTS ), "\n";
+            my @fields_included = ();
+            foreach my $field_name (@FIELD_NAMES) {
+                if ( $include->{$file_type}{$field_name} ) {
+                    push( @fields_included, $field_name );
+                }
+            }
+            my $components = join( " ", @fields_included );
+            print "$DIGEST_COMPONENTS: [$file_type] $components\n";
         }
     }
 
@@ -281,20 +290,20 @@ sub write_manifest {
 
         print "\n";
 
-        foreach my $component (@COMPONENTS) {
-            given ($component) {
+        foreach my $field_name (@FIELD_NAMES) {
+            given ($field_name) {
                 when ($PATH) {
                     print "$PATH: $catalogPath\n"
                       if $include->{$file_type}{$PATH};
                 }
                 when ($CONTENT) {
-                    foreach my $algo (@SHA_ALGOS) {
+                    foreach my $algorithm (@SHA_ALGORITHMS) {
                         print_included_file_field( $include, $item, $CONTENT,
-                            $algo );
+                            $algorithm );
                     }
                 }
                 default {
-                    print_included_file_field( $include, $item, $component );
+                    print_included_file_field( $include, $item, $field_name );
                 }
             }
         }
@@ -329,8 +338,8 @@ my $title = undef;
 my $include = {};
 foreach my $file_type (@FILE_TYPES) {
     $include->{$file_type} = {};
-    foreach my $component (@COMPONENTS) {
-        $include->{$file_type}{$component} = 0;
+    foreach my $field_name (@FIELD_NAMES) {
+        $include->{$file_type}{$field_name} = 0;
     }
 }
 
@@ -341,7 +350,8 @@ foreach my $file_type (@FILE_TYPES) {
 
 # regular files
 $include->{$REGULAR}{$CONTENT} = 1;
-$include->{$REGULAR}{$OWNER}   = 1;
+
+#$include->{$REGULAR}{$OWNER}   = 1;
 
 # links
 $include->{$LINK}{$DESTINATION} = 1;
@@ -349,6 +359,8 @@ $include->{$LINK}{$DESTINATION} = 1;
 my $extra_info = 1;
 
 my $catalog = scan_files( $directory, $include );
+
+# warn if link is dangling or points outside of tree
 
 # output results
 write_manifest( $catalog, $include, $title, $extra_info );
