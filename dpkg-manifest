@@ -42,9 +42,11 @@ my $FIFO             = q{Fifo};
 my $SOCKET           = q{Socket};
 
 # overall output fields
-my $MANIFEST_VERSION = q{Manifest-Version};
-my $RUNNING_DIGEST   = q{Running-Digest};
-my $TALLY            = q{Tally};
+my $MANIFEST_VERSION  = q{Manifest-Version};
+my $TITLE             = q(Title);
+my $RUNNING_DIGEST    = q{Running-Digest};
+my $DIGEST_COMPONENTS = q{Digest-Components};
+my $TALLY             = q{Tally};
 
 # per-file output fields
 my $PATH              = q{Path};
@@ -67,42 +69,16 @@ my $DESTINATION       = q{Destination};
 my @SHA_ALGOS = qw{SHA-256 SHA-384 SHA-512};
 
 my $MODE_TO_TYPE = {
-    S_IFREG  => $FILE,
-    S_IFDIR  => $DIRECTORY,
-    S_IFLNK  => $LINK,
-    S_IFCHR  => $CHARACTER_DEVICE,
-    S_IFBLK  => $BLOCK_DEVICE,
-    S_IFIFO  => $FIFO,
-    S_IFSOCK => $SOCKET,
-    S_IFWHT  => undef,
-    S_ENFMT  => undef,
+    S_IFREG()  => $FILE,
+    S_IFDIR()  => $DIRECTORY,
+    S_IFLNK()  => $LINK,
+    S_IFCHR()  => $CHARACTER_DEVICE,
+    S_IFBLK()  => $BLOCK_DEVICE,
+    S_IFIFO()  => $FIFO,
+    S_IFSOCK() => $SOCKET,
 };
 
 my $BASE64_WORDSIZE = 4;
-
-sub file_type {
-    my ($mode) = @_;
-
-    given ( S_IFMT($mode) ) {
-        when (S_IFREG)  { return $FILE; }
-        when (S_IFDIR)  { return $DIRECTORY; }
-        when (S_IFLNK)  { return $LINK; }
-        when (S_IFCHR)  { return $CHARACTER_DEVICE; }
-        when (S_IFBLK)  { return $BLOCK_DEVICE; }
-        when (S_IFIFO)  { return $FIFO; }
-        when (S_IFSOCK) { return $SOCKET; }
-
-        # return $FILE when S_IFREG;
-        # return $DIRECTORY when S_IFDIR;
-        # return $LINK when S_IFLNK;
-        # return $CHARACTER_DEVICE when S_IFCHR;
-        # return $BLOCK_DEVICE when S_IFBLK;
-        # return $FIFO when S_IFIFO;
-        # return $SOCKET when S_IFSOCK;
-    }
-
-    croak 'Unknown file type';
-}
 
 sub pad_base64 {
     my ($padded) = @_;
@@ -114,16 +90,18 @@ sub pad_base64 {
 
 sub catalog {
 
-    my ($searchDir) = @_;
-
-    my $magic = File::LibMagic->new();
+    my ( $searchDir, $title ) = @_;
 
     my $catalog = {};
+    $catalog->{$TITLE} = $title if $title;
+
     $catalog->{$ITEM}           = {};
     $catalog->{$RUNNING_DIGEST} = {};
     $catalog->{$TALLY}          = {};
 
     my $tally = $catalog->{$TALLY};
+
+    my $magic = File::LibMagic->new();
 
     my $overallShaState = {};
     foreach my $algo (@SHA_ALGOS) {
@@ -159,11 +137,8 @@ sub catalog {
         $item->{$GROUP}             = getgrgid $gid;
         $item->{$PERMISSIONS}       = sprintf "%04o", S_IMODE($mode);
 
-        #        $item->{$TYPE} = $FILE_TYPE->{S_IFREG};
-        #        $item->{$TYPE} = $FILE_TYPE->{S_IFMT( $mode )};
-        #        my $type = S_IFMT($mode);
-        #        print $FILE_TYPE->{$type} . "\n";
-        $item->{$TYPE} = file_type($mode);
+        $item->{$TYPE} = $MODE_TO_TYPE->{ S_IFMT($mode) }
+          or die "Unknown file type";
 
         $tally->{ $item->{$TYPE} } = 0
           if not defined $tally->{ $item->{$TYPE} };
@@ -250,6 +225,8 @@ my $numArgs = $#ARGV + 1;
 my $directory = q{.};
 $directory = $ARGV[0] if ( $numArgs == 1 );
 
+my $title = undef;
+
 my $include_owner       = 0;
 my $include_group       = 0;
 my $include_uid         = 0;
@@ -258,21 +235,22 @@ my $include_permissions = 0;
 
 my $extra_info = 1;
 
-my $catalog = catalog $directory;
+my $catalog = catalog( $directory, $title );
 
 # output results
 
 my $tally = $catalog->{$TALLY};
 
 print "$MANIFEST_VERSION: 0\n";
+print_field( $catalog, $TITLE );
 
 foreach my $algo (@SHA_ALGOS) {
     print_field( $catalog, $RUNNING_DIGEST, $algo );
 }
 
-print "File-Components: Path Contents\n"    if $tally->{$FILE};
-print "Directory-Components: Path\n"        if $tally->{$DIRECTORY};
-print "Link-Components: Path Destination\n" if $tally->{$LINK};
+print "$DIGEST_COMPONENTS: File (Path+Contents)\n"    if $tally->{$FILE};
+print "$DIGEST_COMPONENTS: Directory (Path)\n"        if $tally->{$DIRECTORY};
+print "$DIGEST_COMPONENTS: Link (Path+Destination)\n" if $tally->{$LINK};
 
 if ($extra_info) {
     print "--- for information only ---\n";
