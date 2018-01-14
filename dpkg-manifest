@@ -114,7 +114,10 @@ sub catalog {
       ->in($searchDir);
 
     foreach my $systemPath (@ITEMPATHS) {
-        my $catalogPath = q{./} . substr( $systemPath, 1 + length $searchDir );
+
+      
+      my $cutlength = $searchDir ne q{.} ? 1 + length $searchDir : 0;
+      my $catalogPath = q{./} . substr( $systemPath, $cutlength);
 
         # add path to digests
         foreach my $algo (@SHA_ALGOS) {
