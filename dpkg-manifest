@@ -33,7 +33,7 @@ use Digest::SHA;
 our $VERSION = 0;
 
 # file types
-my $FILE             = q{File};
+my $REGULAR          = q{Regular};
 my $DIRECTORY        = q{Directory};
 my $LINK             = q{Link};
 my $CHARACTER_DEVICE = q{Character-Device};
@@ -41,35 +41,48 @@ my $BLOCK_DEVICE     = q{Block-Device};
 my $FIFO             = q{Fifo};
 my $SOCKET           = q{Socket};
 
+my @FILE_TYPES = (
+    $REGULAR, $DIRECTORY, $LINK, $CHARACTER_DEVICE, $BLOCK_DEVICE, $FIFO,
+    $SOCKET,
+);
+
 # overall output fields
 my $MANIFEST_VERSION  = q{Manifest-Version};
 my $TITLE             = q(Title);
 my $RUNNING_DIGEST    = q{Running-Digest};
 my $DIGEST_COMPONENTS = q{Digest-Components};
+my $ITEM              = q{Item};
 my $TALLY             = q{Tally};
 
 # per-file output fields
 my $PATH              = q{Path};
-my $ITEM              = q{Item};
-my $TYPE              = q{Type};
-my $CONTENT_DIGEST    = q{Content-Digest};
-my $CONTENT_SIZE      = q{Content-Size};
+my $FILE_TYPE         = q{File-Type};
+my $CONTENT           = q{Content};
+my $DESTINATION       = q{Destination};
 my $OWNER             = q{Owner};
 my $GROUP             = q{Group};
 my $UID               = q{Uid};
 my $GID               = q{Gid};
 my $PERMISSIONS       = q{Permissions};
 my $MODIFICATION_TIME = q{Modification-Time};
-my $MAGIC             = q{Magic};
-my $MIME_TYPE         = q{Mime-Type};
-my $ENCODING          = q{Encoding};
-my $DESTINATION       = q{Destination};
+
+# extra information
+my $MAGIC        = q{Magic};
+my $MIME_TYPE    = q{Mime-Type};
+my $ENCODING     = q{Encoding};
+my $CONTENT_SIZE = q{Content-Size};
+
+my @COMPONENTS = (
+    $PATH,        $FILE_TYPE, $CONTENT, $DESTINATION,
+    $OWNER,       $GROUP,     $UID,     $GID,
+    $PERMISSIONS, $MODIFICATION_TIME,
+);
 
 # SHA digests
 my @SHA_ALGOS = qw{SHA-256 SHA-384 SHA-512};
 
 my $MODE_TO_TYPE = {
-    S_IFREG()  => $FILE,
+    S_IFREG()  => $REGULAR,
     S_IFDIR()  => $DIRECTORY,
     S_IFLNK()  => $LINK,
     S_IFCHR()  => $CHARACTER_DEVICE,
@@ -88,13 +101,11 @@ sub pad_base64 {
     return $padded;
 }
 
-sub catalog {
+sub scan_files {
 
-    my ( $searchDir, $title ) = @_;
+    my ( $where, $include ) = @_;
 
     my $catalog = {};
-    $catalog->{$TITLE} = $title if $title;
-
     $catalog->{$ITEM}           = {};
     $catalog->{$RUNNING_DIGEST} = {};
     $catalog->{$TALLY}          = {};
@@ -110,14 +121,13 @@ sub catalog {
 
     # maybe use absolute file names?
 
-    my @ITEMPATHS = sort File::Find::Rule->not( File::Find::Rule->name(q{.}) )
-      ->in($searchDir);
+    my @ITEMPATHS =
+      sort File::Find::Rule->not( File::Find::Rule->name(q{.}) )->in($where);
 
     foreach my $systemPath (@ITEMPATHS) {
 
-      
-      my $cutlength = $searchDir ne q{.} ? 1 + length $searchDir : 0;
-      my $catalogPath = q{./} . substr( $systemPath, $cutlength);
+        my $cutlength = $where ne q{.} ? 1 + length $where : 0;
+        my $catalogPath = q{./} . substr( $systemPath, $cutlength );
 
         # add path to digests
         foreach my $algo (@SHA_ALGOS) {
@@ -140,16 +150,16 @@ sub catalog {
         $item->{$GROUP}             = getgrgid $gid;
         $item->{$PERMISSIONS}       = sprintf "%04o", S_IMODE($mode);
 
-        $item->{$TYPE} = $MODE_TO_TYPE->{ S_IFMT($mode) }
+        $item->{$FILE_TYPE} = $MODE_TO_TYPE->{ S_IFMT($mode) }
           or die "Unknown file type";
 
-        $tally->{ $item->{$TYPE} } = 0
-          if not defined $tally->{ $item->{$TYPE} };
-        $tally->{ $item->{$TYPE} } += 1;
+        $tally->{ $item->{$FILE_TYPE} } = 0
+          if not defined $tally->{ $item->{$FILE_TYPE} };
+        $tally->{ $item->{$FILE_TYPE} } += 1;
 
-        given ( $item->{$TYPE} ) {
+        given ( $item->{$FILE_TYPE} ) {
 
-            when ($FILE) {
+            when ($REGULAR) {
                 $tally->{$CONTENT_SIZE} += $size;
 
                 my $info = $magic->info_from_filename($systemPath);
@@ -158,9 +168,9 @@ sub catalog {
                 $item->{$ENCODING}  = $info->{encoding};
 
                 # calculate content digests
-                $item->{$CONTENT_DIGEST} = {};
+                $item->{$CONTENT} = {};
                 foreach my $algo (@SHA_ALGOS) {
-                    $item->{$CONTENT_DIGEST}{$algo} =
+                    $item->{$CONTENT}{$algo} =
                       pad_base64( Digest::SHA->new($algo)->addfile($systemPath)
                           ->b64digest );
                 }
@@ -215,11 +225,97 @@ sub print_field {
     my ( $hashref, $field, $specifier ) = @_;
     if ( defined $specifier ) {
         print "$field: $specifier $hashref->{$field}{$specifier}\n"
-          if $hashref && $hashref->{$field} && $hashref->{$field}{$specifier};
+          if defined $hashref
+          && defined $hashref->{$field}
+          && defined $hashref->{$field}{$specifier};
     }
     else {
-        print "$field: $hashref->{$field}\n" if $hashref && $hashref->{$field};
+        print "$field: $hashref->{$field}\n"
+          if defined $hashref && $hashref->{$field};
     }
+    return;
+}
+
+sub print_included_file_field {
+    my ( $include, $item, $field, $specifier ) = @_;
+    print_field( $item, $field, $specifier )
+      if $include->{ $item->{$FILE_TYPE} }{$field};
+    return;
+}
+
+sub write_manifest {
+    my ( $catalog, $include, $title, $extra_info ) = @_;
+
+    my $tally = $catalog->{$TALLY};
+
+    print "$MANIFEST_VERSION: 0\n";
+    print "$TITLE: $title\n" if defined $title;
+
+    foreach my $algo (@SHA_ALGOS) {
+        print_field( $catalog, $RUNNING_DIGEST, $algo );
+    }
+
+    foreach my $file_type (@FILE_TYPES) {
+        if ( $tally->{$file_type} ) {
+            print "$DIGEST_COMPONENTS: [$file_type] ",
+              join( " ", @COMPONENTS ), "\n";
+        }
+    }
+
+    if ($extra_info) {
+        print "--- for information only ---\n";
+
+        print "$TALLY: $ITEM ", scalar keys %{ $catalog->{$ITEM} }, "\n";
+
+        foreach my $file_type (@FILE_TYPES) {
+            print_field( $catalog, $TALLY, $file_type );
+        }
+
+        print_field( $catalog, $TALLY, $CONTENT_SIZE );
+    }
+
+    foreach my $catalogPath ( sort keys %{ $catalog->{$ITEM} } ) {
+
+        my $item      = $catalog->{$ITEM}{$catalogPath};
+        my $file_type = $item->{$FILE_TYPE};
+
+        print "\n";
+
+        foreach my $component (@COMPONENTS) {
+            given ($component) {
+                when ($PATH) {
+                    print "$PATH: $catalogPath\n"
+                      if $include->{$file_type}{$PATH};
+                }
+                when ($CONTENT) {
+                    foreach my $algo (@SHA_ALGOS) {
+                        print_included_file_field( $include, $item, $CONTENT,
+                            $algo );
+                    }
+                }
+                default {
+                    print_included_file_field( $include, $item, $component );
+                }
+            }
+        }
+
+        if ($extra_info) {
+            print "--- for information only ---\n";
+
+            given ( $item->{$FILE_TYPE} ) {
+                when ($REGULAR) {
+                    print_field( $item, $MAGIC );
+                    print_field( $item, $MIME_TYPE );
+                    print_field( $item, $ENCODING );
+                    print_field( $item, $CONTENT_SIZE );
+                }
+                when ($LINK) {
+                    print_field( $item, $CONTENT_SIZE );
+                }
+            }
+        }
+    }
+
     return;
 }
 
@@ -230,96 +326,29 @@ $directory = $ARGV[0] if ( $numArgs == 1 );
 
 my $title = undef;
 
-my $include_owner       = 0;
-my $include_group       = 0;
-my $include_uid         = 0;
-my $include_gid         = 0;
-my $include_permissions = 0;
+my $include = {};
+foreach my $file_type (@FILE_TYPES) {
+    $include->{$file_type} = {};
+    foreach my $component (@COMPONENTS) {
+        $include->{$file_type}{$component} = 0;
+    }
+}
+
+foreach my $file_type (@FILE_TYPES) {
+    $include->{$file_type}{$PATH}      = 1;
+    $include->{$file_type}{$FILE_TYPE} = 1;
+}
+
+# regular files
+$include->{$REGULAR}{$CONTENT} = 1;
+$include->{$REGULAR}{$OWNER}   = 1;
+
+# links
+$include->{$LINK}{$DESTINATION} = 1;
 
 my $extra_info = 1;
 
-my $catalog = catalog( $directory, $title );
+my $catalog = scan_files( $directory, $include );
 
 # output results
-
-my $tally = $catalog->{$TALLY};
-
-print "$MANIFEST_VERSION: 0\n";
-print_field( $catalog, $TITLE );
-
-foreach my $algo (@SHA_ALGOS) {
-    print_field( $catalog, $RUNNING_DIGEST, $algo );
-}
-
-print "$DIGEST_COMPONENTS: File (Path+Contents)\n"    if $tally->{$FILE};
-print "$DIGEST_COMPONENTS: Directory (Path)\n"        if $tally->{$DIRECTORY};
-print "$DIGEST_COMPONENTS: Link (Path+Destination)\n" if $tally->{$LINK};
-
-if ($extra_info) {
-    print "--- for information only ---\n";
-
-    print "$TALLY: $ITEM ", scalar keys %{ $catalog->{$ITEM} }, "\n";
-
-    print_field( $catalog, $TALLY, $FILE );
-    print_field( $catalog, $TALLY, $DIRECTORY );
-    print_field( $catalog, $TALLY, $LINK );
-    print_field( $catalog, $TALLY, $CHARACTER_DEVICE );
-    print_field( $catalog, $TALLY, $BLOCK_DEVICE );
-    print_field( $catalog, $TALLY, $FIFO );
-    print_field( $catalog, $TALLY, $SOCKET );
-
-    print_field( $catalog, $TALLY, $CONTENT_SIZE );
-}
-
-foreach my $catalogPath ( sort keys %{ $catalog->{$ITEM} } ) {
-
-    print "\n";
-
-    my $item = $catalog->{$ITEM}{$catalogPath};
-
-    print "$PATH: $catalogPath\n";
-    print "$ITEM: $item->{$TYPE}\n";
-
-    given ( $item->{$TYPE} ) {
-        when ($FILE) {
-            foreach my $algo (@SHA_ALGOS) {
-                print_field( $item, $CONTENT_DIGEST, $algo );
-            }
-        }
-        when ($DIRECTORY) {
-        }
-        when ($LINK) {
-            print_field( $item, $DESTINATION );
-        }
-        when ($CHARACTER_DEVICE) {
-        }
-        when ($BLOCK_DEVICE) {
-        }
-        when ($FIFO) {
-        }
-        when ($SOCKET) {
-        }
-    }
-
-    print_field( $item, $OWNER )       if $include_owner;
-    print_field( $item, $GROUP )       if $include_group;
-    print_field( $item, $UID )         if $include_uid;
-    print_field( $item, $GID )         if $include_gid;
-    print_field( $item, $PERMISSIONS ) if $include_permissions;
-
-    if ($extra_info) {
-        print "--- for information only ---\n";
-
-        given ( $item->{$TYPE} ) {
-            when ($FILE) {
-                print_field( $item, $MAGIC );
-                print_field( $item, $MIME_TYPE );
-                print_field( $item, $ENCODING );
-                print_field( $item, $CONTENT_SIZE );
-            }
-            when ($LINK) {
-                print_field( $item, $CONTENT_SIZE );
-            }
-        }
-    }
-}
+write_manifest( $catalog, $include, $title, $extra_info );
