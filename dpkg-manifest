@@ -36,6 +36,7 @@ my $SOCKET =q{Socket};
 
 # overall output fields
 my $MANIFEST_VERSION =q{Manifest-Version};
+my $RUNNING_DIGEST =q{Running-Digest};
 my $TALLY =q{Tally};
 
 # per-file output fields
@@ -117,9 +118,10 @@ sub catalog {
     my $tally = {};
     $catalog->{Tally} = $tally;
 
-    my $overallSha256State = Digest::SHA->new(256);
-    my $overallSha384State = Digest::SHA->new(384);
-    my $overallSha512State = Digest::SHA->new(512);
+    my $overallShaState = {};
+    foreach my $algo (@SHA_ALGOS) {
+      $overallShaState->{$algo} = Digest::SHA->new($algo);
+    }
 
     my @ITEMPATHS =
       sort File::Find::Rule->not( File::Find::Rule->name('.') )->in($searchDir);
@@ -127,10 +129,10 @@ sub catalog {
     foreach my $systemPath (@ITEMPATHS) {
         my $catalogPath = './' . substr( $systemPath, 1 + length $searchDir );
 
-        # add path to digest
-        $overallSha256State->add($catalogPath);
-        $overallSha384State->add($catalogPath);
-        $overallSha512State->add($catalogPath);
+        # add path to digests
+        foreach my $algo (@SHA_ALGOS) {
+          $overallShaState->{$algo}->add($catalogPath);
+        }
 
         my $item = {};
         $catalog->{$ITEM}{$catalogPath} = $item;
@@ -175,9 +177,9 @@ sub catalog {
           }
 
           # also add content to overall digests
-          $overallSha256State->addfile($systemPath);
-          $overallSha384State->addfile($systemPath);
-          $overallSha512State->addfile($systemPath);
+          foreach my $algo (@SHA_ALGOS) {
+            $overallShaState->{$algo}->addfile($systemPath);
+          }
 
           # add other elements represented in manifest
         }
@@ -187,9 +189,9 @@ sub catalog {
           $tally->{$TALLY}{$CONTENT_SIZE} += $size;
           my $destination = readlink $systemPath;
           $item->{$DESTINATION} = $destination;
-          $overallSha256State->add($destination);
-          $overallSha384State->add($destination);
-          $overallSha512State->add($destination);
+          foreach my $algo (@SHA_ALGOS) {
+            $overallShaState->{$algo}->add($destination);
+          }
         }
         elsif ( $item->{$TYPE} eq $CHARACTER_DEVICE ) {
         }
@@ -204,9 +206,10 @@ sub catalog {
         }
     }
     
-    $tally->{SHA256} = pad_base64($overallSha256State->b64digest);
-    $tally->{SHA384} = pad_base64($overallSha384State->b64digest);
-    $tally->{SHA512} = pad_base64($overallSha512State->b64digest);
+    foreach my $algo (@SHA_ALGOS) {
+      $tally->{$RUNNING_DIGEST}{$algo} 
+        = pad_base64($overallShaState->{$algo}->b64digest);
+    }
 
     return $catalog;
 }
@@ -243,9 +246,9 @@ my $tally = $catalog->{Tally};
 
 print "$MANIFEST_VERSION: 0\n";
 
-print "Running-Digest: SHA-256 $tally->{SHA256}\n";
-print "Running-Digest: SHA-384 $tally->{SHA384}\n";
-print "Running-Digest: SHA-512 $tally->{SHA512}\n";
+foreach my $algo (@SHA_ALGOS) {
+  print_field( $tally, $RUNNING_DIGEST, $algo);
+}
 
 print "File-Components: Path Contents\n" if $tally->{$TALLY}->{$FILE};
 print "Directory-Components: Path\n" if $tally->{$TALLY}->{$DIRECTORY};
