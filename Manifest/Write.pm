@@ -17,69 +17,27 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+
+package Manifest::Write;
+
+our $VERSION = 0;
+
 use strict;
 use warnings;
 
 use feature qw(switch);
 no if $] >= 5.018, warnings => "experimental::smartmatch";
 
+use Exporter qw( import );
 use Carp;
-use Digest::SHA;
 
-use lib q{.};
-use Manifest::ScanFiles;
+use Manifest::Fields;
 
-# module version
-our $VERSION = 0;
-
-# file types
-my $REGULAR          = q{Regular};
-my $DIRECTORY        = q{Directory};
-my $LINK             = q{Link};
-my $CHARACTER_DEVICE = q{Character-Device};
-my $BLOCK_DEVICE     = q{Block-Device};
-my $FIFO             = q{Fifo};
-my $SOCKET           = q{Socket};
-
-my @FILE_TYPES = (
-    $REGULAR, $DIRECTORY, $LINK, $CHARACTER_DEVICE, $BLOCK_DEVICE, $FIFO,
-    $SOCKET,
+our @EXPORT = qw(
+  write_manifest
 );
 
-# overall output fields
-my $MANIFEST_VERSION  = q{Manifest-Version};
-my $TITLE             = q(Title);
-my $RUNNING_DIGEST    = q{Running-Digest};
-my $DIGEST_COMPONENTS = q{Digest-Components};
-my $ITEM              = q{Item};
-my $TALLY             = q{Tally};
-
-# per-file output fields
-my $PATH              = q{Path};
-my $FILE_TYPE         = q{File-Type};
-my $CONTENT           = q{Content};
-my $DESTINATION       = q{Destination};
-my $OWNER             = q{Owner};
-my $GROUP             = q{Group};
-my $UID               = q{Uid};
-my $GID               = q{Gid};
-my $PERMISSIONS       = q{Permissions};
-my $MODIFICATION_TIME = q{Modification-Time};
-
-# extra information
-my $MAGIC        = q{Magic};
-my $MIME_TYPE    = q{Mime-Type};
-my $ENCODING     = q{Encoding};
-my $CONTENT_SIZE = q{Content-Size};
-
-my @FIELD_NAMES = (
-    $PATH,        $FILE_TYPE, $CONTENT, $DESTINATION,
-    $OWNER,       $GROUP,     $UID,     $GID,
-    $PERMISSIONS, $MODIFICATION_TIME,
-);
-
-# SHA digests
-my @SHA_ALGORITHMS = qw{SHA-256 SHA-384 SHA-512};
+our @EXPORT_OK = qw();
 
 sub print_field {
     my ( $hashref, $field, $specifier ) = @_;
@@ -184,3 +142,7 @@ sub write_manifest {
 
     return;
 }
+
+
+__PACKAGE__;
+__END__

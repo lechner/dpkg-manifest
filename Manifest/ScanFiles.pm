@@ -17,71 +17,34 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+
+package Manifest::ScanFiles;
+
+our $VERSION = 0;
+
 use strict;
 use warnings;
 
 use feature qw(switch);
 no if $] >= 5.018, warnings => "experimental::smartmatch";
 
+use Exporter qw( import );
 use Carp;
+use Const::Fast;
 use File::Find::Rule;
 use Fcntl ':mode';
 use File::LibMagic;
 use Digest::SHA;
 
-# module version
-our $VERSION = 0;
+use Manifest::Fields;
 
-# file types
-my $REGULAR          = q{Regular};
-my $DIRECTORY        = q{Directory};
-my $LINK             = q{Link};
-my $CHARACTER_DEVICE = q{Character-Device};
-my $BLOCK_DEVICE     = q{Block-Device};
-my $FIFO             = q{Fifo};
-my $SOCKET           = q{Socket};
-
-my @FILE_TYPES = (
-    $REGULAR, $DIRECTORY, $LINK, $CHARACTER_DEVICE, $BLOCK_DEVICE, $FIFO,
-    $SOCKET,
+our @EXPORT = qw(
+  make_catalog
 );
 
-# overall output fields
-my $MANIFEST_VERSION  = q{Manifest-Version};
-my $TITLE             = q(Title);
-my $RUNNING_DIGEST    = q{Running-Digest};
-my $DIGEST_COMPONENTS = q{Digest-Components};
-my $ITEM              = q{Item};
-my $TALLY             = q{Tally};
+our @EXPORT_OK = qw();
 
-# per-file output fields
-my $PATH              = q{Path};
-my $FILE_TYPE         = q{File-Type};
-my $CONTENT           = q{Content};
-my $DESTINATION       = q{Destination};
-my $OWNER             = q{Owner};
-my $GROUP             = q{Group};
-my $UID               = q{Uid};
-my $GID               = q{Gid};
-my $PERMISSIONS       = q{Permissions};
-my $MODIFICATION_TIME = q{Modification-Time};
-
-# extra information
-my $MAGIC        = q{Magic};
-my $MIME_TYPE    = q{Mime-Type};
-my $ENCODING     = q{Encoding};
-my $CONTENT_SIZE = q{Content-Size};
-
-my @FIELD_NAMES = (
-    $PATH,        $FILE_TYPE, $CONTENT, $DESTINATION,
-    $OWNER,       $GROUP,     $UID,     $GID,
-    $PERMISSIONS, $MODIFICATION_TIME,
-);
-
-# SHA digests
-my @SHA_ALGORITHMS = qw{SHA-256 SHA-384 SHA-512};
-
-my $MODE_TO_TYPE = {
+const my $MODE_TO_TYPE => {
     S_IFREG()  => $REGULAR,
     S_IFDIR()  => $DIRECTORY,
     S_IFLNK()  => $LINK,
@@ -91,17 +54,17 @@ my $MODE_TO_TYPE = {
     S_IFSOCK() => $SOCKET,
 };
 
-my $BASE64_WORDSIZE = 4;
+const my $BASE64_WORDSIZE => 4;
 
 sub pad_base64 {
-    my ($padded) = @_;
+    my ( $padded ) = @_;
     while ( length($padded) % $BASE64_WORDSIZE ) {
         $padded .= q{=};
     }
     return $padded;
 }
 
-sub scan_files {
+sub make_catalog {
 
     my ( $where, $include ) = @_;
 
@@ -223,3 +186,7 @@ sub scan_files {
 
     return $catalog;
 }
+
+
+__PACKAGE__;
+__END__
