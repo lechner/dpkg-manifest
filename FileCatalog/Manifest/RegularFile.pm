@@ -35,7 +35,7 @@ sub new {
     my ( $class, %args ) = @_;
     my $self = $class->SUPER::new( %args );
 
-    $self->type( q{Regular-File} );
+    $self->type( q{Regular} );
 
     if ( exists $args{path} ) { $self->path( $args{path} ); }
 
@@ -118,26 +118,33 @@ sub encoding {
 
 sub extra_info {
     my $self = shift;
-    return
-        $self->SUPER::extra_info
-      . $self->{magic}->to_string
-      . $self->{mime_type}->to_string
-      . $self->{encoding}->to_string
-      . $self->{size}->to_string;
+    my @LINES = $self->SUPER::extra_info;
+
+    my $magic = $self->{magic}->to_string;
+    my $mime_type = $self->{mime_type}->to_string;
+    if( length $magic ) { push( @LINES, $magic ); }
+    if( length $mime_type ) { push( @LINES, $mime_type ); }
+
+    my $encoding = $self->{encoding}->to_string;
+    my $size = $self->{size}->to_string;
+    if( length $encoding ) { push( @LINES, $encoding ); }
+    if( length $size ) { push( @LINES, $size ); }
+
+    return @LINES;
 }
 
-sub to_string {
+sub as_list {
     my $self = shift;
-    return
-        $self->SUPER::to_string
-      . $self->{sha256}->to_string
-      . $self->{sha384}->to_string
-      . $self->{sha512}->to_string;
-}
+    my @LINES = $self->SUPER::as_list;
 
-sub print {
-    my $self = shift;
-    print $self->to_string;
+    my $sha256 = $self->{sha256}->to_string;
+    my $sha384 = $self->{sha384}->to_string;
+    my $sha512 = $self->{sha512}->to_string;
+    if( length $sha256 ) { push( @LINES, $sha256 ); }
+    if( length $sha384 ) { push( @LINES, $sha384 ); }
+    if( length $sha512 ) { push( @LINES, $sha512 ); }
+
+    return @LINES;
 }
 
 __PACKAGE__;

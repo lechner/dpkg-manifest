@@ -30,25 +30,10 @@ sub new {
     my ( $class, %args ) = @_;
     my $self = $class->SUPER::new( %args );
 
-    $self->type( q{Block-Device} );
+    $self->type( q{Block Device} );
     if ( exists $args{path} ) { $self->path( $args{path} ) }
 
     return $self;
-}
-
-sub extra_info {
-    my $self = shift;
-    return $self->SUPER::extra_info;
-}
-
-sub to_string {
-    my $self = shift;
-    return $self->SUPER::to_string;
-}
-
-sub print {
-    my $self = shift;
-    print $self->to_string;
 }
 
 __PACKAGE__;

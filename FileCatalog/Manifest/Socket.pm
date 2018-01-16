@@ -36,20 +36,5 @@ sub new {
     return $self;
 }
 
-sub extra_info {
-    my $self = shift;
-    return $self->SUPER::extra_info;
-}
-
-sub to_string {
-    my $self = shift;
-    return $self->SUPER::to_string;
-}
-
-sub print {
-    my $self = shift;
-    print $self->to_string;
-}
-
 __PACKAGE__;
 __END__

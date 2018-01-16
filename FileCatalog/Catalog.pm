@@ -29,12 +29,13 @@ no if $] >= 5.018, warnings => "experimental::smartmatch";
 
 use Carp;
 use Const::Fast;
+use Cwd;
 use File::Find::Rule;
 
 use FileCatalog::Item;
 
 const my $EMPTY => q{};
-const my $CWD => q{.};
+const my $DOT => q{.};
 const my $SLASH => q{/};
 const my $NEWLINE => qq{\n};
 
@@ -58,50 +59,51 @@ sub take_inventory {
     $self->{Tally} = {};
     my $tally = $self->{Tally};
 
-    my @SYSTEM_PATHS =
-      sort File::Find::Rule->not( File::Find::Rule->name(q{.}) )->in( $where );
+    my $savecwd = getcwd();
+    chdir( $where ) or croak( "Cannot chdir to $where" );
+    
+    my @SYSTEM_PATHS = File::Find::Rule->in( $DOT );
 
-    foreach my $system_path (@SYSTEM_PATHS) {
+    foreach my $system_path( @SYSTEM_PATHS ) {
 
-        my $item = FileCatalog::Item->new( path => $system_path );
-
-        # maybe use absolute file names?
-        my $skip = $where ne $CWD ? length $where : 0;
-        my $catalog_path = $CWD . $SLASH . substr( $system_path, $skip );
+        my $catalog_path = $DOT . $SLASH . $system_path;
+        my $item = FileCatalog::Item->new( path => $catalog_path );
 
         $self->{Items}{$catalog_path} = $item;
 
         my $file_type = $item->type;
-        if ( not defined $tally->{$file_type} ) {
+        if ( not exists $tally->{$file_type} ) {
             $tally->{$file_type} = 0;
         }
         $tally->{$file_type} += 1;
+      }
 
-    }
+    chdir( $savecwd ) or croak( 'Cannot change back to directory ', $savecwd );
 }
 
-sub to_string {
+sub as_list {
     my $self = shift;
 
     my ( $print_extra_info ) = @_;
 
     my @LINES = ();
     foreach my $key ( sort keys %{$self->{Items}} ) {
-      my $item = $self->{Items}{$key};
-      push( @LINES, $item->to_string );
-        
-        if ($print_extra_info && $item->extra_info) {
-            push( @LINES, '--- for information only ---' . $NEWLINE );
-            push( @LINES, $item->extra_info );
+        my $item = $self->{Items}{$key};
+        push( @LINES, $item->as_list );
+
+        my @EXTRA_INFO = $item->extra_info;
+        if ($print_extra_info && scalar @EXTRA_INFO) {
+            push( @LINES, '--- for information only ---' );
+            push( @LINES, @EXTRA_INFO );
           }
-      push ( @LINES, $NEWLINE );
+      push ( @LINES, $EMPTY );
     }
-    return join( $EMPTY,  @LINES );
+    return @LINES;
 }
 
 sub print {
     my $self = shift;
-    print $self->to_string;
+    print join( $NEWLINE, $self->as_list ) . $NEWLINE;
 }
 
 __PACKAGE__;

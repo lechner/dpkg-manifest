@@ -64,12 +64,12 @@ sub to_string {
     my $self = shift;
     return $self->name . $COLON . $SPACE
       . ( $self->specifier ? $self->specifier . $SPACE : $EMPTY )
-      . $self->value . $NEWLINE;
+      . $self->value;
 }
 
 sub print {
     my $self = shift;
-    print $self->to_string;
+    print $self->to_string . $NEWLINE;
 }
 
 __PACKAGE__;

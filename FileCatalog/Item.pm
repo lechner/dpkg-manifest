@@ -42,6 +42,7 @@ use FileCatalog::Manifest::Socket;
 our $VERSION = '0';
 
 const my $EMPTY           => q{};
+const my @EMPTY_LIST      => ();
 const my $EQUALS          => q{=};
 const my $BASE64_WORDSIZE => 4;
 
@@ -73,7 +74,7 @@ sub path {
                 $dev,   $ino,     $mode, $nlink, $uid,
                 $gid,   $rdev,    $size, $atime, $mtime,
                 $ctime, $blksize, $blocks
-            ) = lstat( $path );
+            ) = lstat( $path ) or die( "Cannot stat $path" );;
 
             my $manifest;
 
@@ -142,7 +143,7 @@ sub path {
                 }
 
                 default {
-                  croak( 'Unknown file type' );
+                  croak( "Unknown file type $_" );
                 }
             }
 
@@ -160,33 +161,33 @@ sub path {
     return $self->{path};
 }
 
-sub manifest {
-    my $self = shift;
-    return $self->{manifest};
-}
+#sub manifest {
+#    my $self = shift;
+#    return $self->{manifest};
+#}
 
 sub type {
     my $self = shift;
-    if ( defined $self->manifest ) {
-      return $self->manifest->type;
+    if ( exists $self->{manifest} ) {
+      return $self->{manifest}->type;
     }
     return $EMPTY;
 }
 
-sub to_string {
+sub as_list {
     my $self = shift;
-    if ( defined $self->manifest ) {
-      return $self->manifest->to_string;
+    if ( exists $self->{manifest} ) {
+      return $self->{manifest}->as_list;
     }
-    return $EMPTY;
+    return @EMPTY_LIST;
 }
 
 sub extra_info {
     my $self = shift;
-    if ( defined $self->manifest ) {
-      return $self->manifest->extra_info;
+    if ( exists $self->{manifest} ) {
+      return $self->{manifest}->extra_info;
     }
-    return $EMPTY;
+    return @EMPTY_LIST;
 }
 
 sub print {

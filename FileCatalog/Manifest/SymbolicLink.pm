@@ -33,7 +33,7 @@ sub new {
     my ( $class, %args ) = @_;
     my $self = $class->SUPER::new( %args );
 
-    $self->type( q{Symbolic-Link} );
+    $self->type( q{Symbolic Link} );
     if ( exists $args{path} ) { $self->path( $args{path} ); }
 
     $self->{destination} =
@@ -52,19 +52,14 @@ sub destination {
     return $self->{destination}->value;
 }
 
-sub extra_info {
+sub as_list {
     my $self = shift;
-    return $self->SUPER::extra_info;
-}
+    my @LINES = $self->SUPER::as_list;
 
-sub to_string {
-    my $self = shift;
-    return $self->SUPER::to_string . $self->{destination}->to_string;
-}
+    my $destination = $self->{destination}->to_string;
+    if( length $destination ) { push( @LINES, $destination ); }
 
-sub print {
-    my $self = shift;
-    print $self->to_string;
+    return @LINES;
 }
 
 __PACKAGE__;

@@ -22,9 +22,13 @@ package FileCatalog::Manifest::File;
 use strict;
 use warnings;
 
+use Const::Fast;
+
 use FileCatalog::Manifest::Field;
 
 our $VERSION = '0';
+
+const my $NEWLINE => qq{\n};
 
 sub new {
     my ( $class, %args ) = @_;
@@ -104,23 +108,42 @@ sub mtime {
 
 sub extra_info {
     my $self = shift;
-    return
-        $self->{uid}->to_string
-      . $self->{gid}->to_string
-      . $self->{owner}->to_string
-      . $self->{group}->to_string
-      . $self->{mode}->to_string
-      . $self->{mtime}->to_string;
+    my @LINES = ();
+  
+    my $uid = $self->{uid}->to_string;
+    my $gid = $self->{gid}->to_string;
+    if( length $uid ) { push( @LINES, $uid ); }
+    if( length $gid ) { push( @LINES, $gid ); }
+
+    my $owner = $self->{owner}->to_string;
+    my $group = $self->{group}->to_string;
+    if( length $owner ) { push( @LINES, $owner ); }
+    if( length $group ) { push( @LINES, $group ); }
+
+    my $mode = $self->{mode}->to_string;
+    my $mtime = $self->{mtime}->to_string;
+    if( length $mode ) { push( @LINES, $mode ); }
+    if( length $mtime ) { push( @LINES, $mtime ); }
+
+    return @LINES;
 }
 
-sub to_string {
+sub as_list {
     my $self = shift;
-    return $self->{path}->to_string . $self->{type}->to_string;
+    my @LINES = ();
+  
+    my $path = $self->{path}->to_string;
+    if( length $path ) { push( @LINES, $path ); }
+
+    my $type = $self->{type}->to_string;
+    if( length $type ) { push( @LINES, $type ); }
+
+    return @LINES;
 }
 
 sub print {
     my $self = shift;
-    print $self->to_string;
+    print join( $NEWLINE, $self->as_list ) . $NEWLINE;
 }
 
 __PACKAGE__;
