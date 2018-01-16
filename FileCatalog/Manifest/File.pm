@@ -45,15 +45,12 @@ sub new {
     $self->{owner} = FileCatalog::Manifest::Field->new( name => q{Owner} );
     $self->{group} = FileCatalog::Manifest::Field->new( name => q{Group} );
     $self->{mode}  = FileCatalog::Manifest::Field->new( name => q{File-Mode} );
-    $self->{mtime} =
-      FileCatalog::Manifest::Field->new( name => q{Modification-Time} );
 
     if ( exists $args{uid} )   { $self->{uid}->value( $args{uid} ); }
     if ( exists $args{gid} )   { $self->{gid}->value( $args{gid} ); }
     if ( exists $args{owner} ) { $self->{owner}->value( $args{owner} ); }
     if ( exists $args{group} ) { $self->{group}->value( $args{group} ); }
     if ( exists $args{mode} )  { $self->{mode}->value( $args{mode} ); }
-    if ( exists $args{mtime} ) { $self->{mtime}->value( $args{mtime} ); }
 
     return $self;
 }
@@ -100,28 +97,19 @@ sub mode {
     return $self->{mode}->value;
 }
 
-sub mtime {
-    my $self = shift;
-    if (@_) { $self->{mtime}->value(shift); }
-    return $self->{mtime}->value;
-}
-
 sub extra_info {
     my $self = shift;
     my @LINES = ();
   
-    my $mtime = $self->{mtime}->to_string;
     my $mode = $self->{mode}->to_string;
-    if( length $mtime ) { push( @LINES, $mtime ); }
-    if( length $mode ) { push( @LINES, $mode ); }
-
     my $owner = $self->{owner}->to_string;
     my $group = $self->{group}->to_string;
-    if( length $owner ) { push( @LINES, $owner ); }
-    if( length $group ) { push( @LINES, $group ); }
-
     my $uid = $self->{uid}->to_string;
     my $gid = $self->{gid}->to_string;
+
+    if( length $mode ) { push( @LINES, $mode ); }
+    if( length $owner ) { push( @LINES, $owner ); }
+    if( length $group ) { push( @LINES, $group ); }
     if( length $uid ) { push( @LINES, $uid ); }
     if( length $gid ) { push( @LINES, $gid ); }
 
@@ -133,9 +121,9 @@ sub as_list {
     my @LINES = ();
   
     my $path = $self->{path}->to_string;
-    if( length $path ) { push( @LINES, $path ); }
-
     my $type = $self->{type}->to_string;
+
+    if( length $path ) { push( @LINES, $path ); }
     if( length $type ) { push( @LINES, $type ); }
 
     return @LINES;

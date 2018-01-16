@@ -62,7 +62,7 @@ sub take_inventory {
     my $savecwd = getcwd();
     chdir( $where ) or croak( "Cannot chdir to $where" );
     
-    my @SYSTEM_PATHS = File::Find::Rule->in( $DOT );
+    my @SYSTEM_PATHS = File::Find::Rule->not_name( $DOT )->in( $DOT );
 
     foreach my $system_path( @SYSTEM_PATHS ) {
 

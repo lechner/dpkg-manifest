@@ -28,6 +28,8 @@ our $VERSION = '0';
 const my $EMPTY => q{};
 const my $SPACE => q{ };
 const my $COLON => q{:};
+const my $LEFT_SQUARE => q{[};
+const my $RIGHT_SQUARE => q{]};
 const my $NEWLINE => qq{\n};
 
 sub new {
@@ -63,7 +65,9 @@ sub specifier {
 sub to_string {
     my $self = shift;
     return $self->name . $COLON . $SPACE
-      . ( $self->specifier ? $self->specifier . $SPACE : $EMPTY )
+      . ( $self->specifier
+          ? $LEFT_SQUARE . $self->specifier . $RIGHT_SQUARE . $SPACE
+          : $EMPTY )
       . $self->value;
 }
 

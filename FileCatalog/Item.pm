@@ -29,6 +29,7 @@ use Fcntl ':mode';
 use File::LibMagic;
 use Digest::SHA;
 use DateTime::Format::RFC3339;
+use DateTime::Format::Mail;
 use Const::Fast;
 
 use FileCatalog::Manifest::RegularFile;
@@ -83,7 +84,17 @@ sub path {
                     $manifest =
                       FileCatalog::Manifest::RegularFile->new( path => $path );
 
+                    my $utc = DateTime->from_epoch( epoch => $mtime )
+                      ->set_time_zone( 'UTC' );
+                    my $rfc2822 = DateTime::Format::Mail->new;
+                    my $rfc3339 = DateTime::Format::RFC3339->new;
+                    $manifest->mtime_rfc2822( $rfc2822
+                                              ->format_datetime( $utc ) );
+                    $manifest->mtime_rfc3339( $rfc3339
+                                              ->format_datetime( $utc ) );
+                    
                     $manifest->size($size);
+
                     $manifest->sha256(
                         pad_base64(
                             Digest::SHA->new(q{SHA-256})->addfile($path)
@@ -146,15 +157,11 @@ sub path {
                 }
             }
 
-            $manifest->uid($uid);
-            $manifest->gid($gid);
+            $manifest->mode( sprintf "%04o", S_IMODE($mode) );
             $manifest->owner( getpwuid $uid );
             $manifest->group( getgrgid $gid );
-            my $utc = DateTime->from_epoch( epoch => $mtime )
-              ->set_time_zone('UTC');
-            my $rfc3339 = DateTime::Format::RFC3339->new;
-            $manifest->mtime( $rfc3339->format_datetime( $utc ) );
-            $manifest->mode( sprintf "%04o", S_IMODE($mode) );
+            $manifest->uid($uid);
+            $manifest->gid($gid);
 
             $self->{manifest} = $manifest;
         }

@@ -56,10 +56,20 @@ sub new {
     if ( exists $args{sha384} ) { $self->sha384( $args{sha384} ); }
     if ( exists $args{sha512} ) { $self->sha512( $args{sha512} ); }
 
-    $self->{size} =
-      FileCatalog::Manifest::Field->new( name => q{Content-Size} );
+    $self->{size} = FileCatalog::Manifest::Field
+      ->new( name => q{Content-Size} );
+    $self->{mtime_rfc2822} = FileCatalog::Manifest::Field
+      ->new( name => q{Last-Modified}, specifier => q{RFC2822} );
+    $self->{mtime_rfc3339} = FileCatalog::Manifest::Field
+      ->new( name => q{Last-Modified}, specifier => q{RFC3339} );
 
     if ( exists $args{size} ) { $self->{size}->value( $args{size} ); }
+    if ( exists $args{mtime_rfc2822} ) {
+      $self->{mtime_rfc2822}->value( $args{mtime_rfc2822} );
+    }
+    if ( exists $args{mtime_rfc3339} ) {
+      $self->{mtime_rfc3339}->value( $args{mtime_rfc3339} );
+    }
 
     $self->{magic} = FileCatalog::Manifest::Field->new( name => q{Magic} );
     $self->{mime_type} =
@@ -98,6 +108,18 @@ sub size {
     return $self->{size}->value;
 }
 
+sub mtime_rfc2822 {
+    my $self = shift;
+    if (@_) { $self->{mtime_rfc2822}->value(shift); }
+    return $self->{mtime_rfc2822}->value;
+}
+
+sub mtime_rfc3339 {
+    my $self = shift;
+    if (@_) { $self->{mtime_rfc3339}->value(shift); }
+    return $self->{mtime_rfc3339}->value;
+}
+
 sub magic {
     my $self = shift;
     if (@_) { $self->{magic}->value(shift); }
@@ -123,13 +145,19 @@ sub extra_info {
     my $magic = $self->{magic}->to_string;
     my $mime_type = $self->{mime_type}->to_string;
     my $encoding = $self->{encoding}->to_string;
+    my $size = $self->{size}->to_string;
+    my $mtime_rfc2822 = $self->{mtime_rfc2822}->to_string;
+    my $mtime_rfc3339 = $self->{mtime_rfc3339}->to_string;
+
+    if( length $mtime_rfc2822 ) { push( @LINES, $mtime_rfc2822 ); }
+    if( length $mtime_rfc3339 ) { push( @LINES, $mtime_rfc3339 ); }
+
     if( length $magic ) { push( @LINES, $magic ); }
     if( length $mime_type ) { push( @LINES, $mime_type ); }
     if( length $encoding ) { push( @LINES, $encoding ); }
 
     push( @LINES, $self->SUPER::extra_info );
 
-    my $size = $self->{size}->to_string;
     if( length $size ) { push( @LINES, $size ); }
 
     return @LINES;
@@ -142,6 +170,7 @@ sub as_list {
     my $sha256 = $self->{sha256}->to_string;
     my $sha384 = $self->{sha384}->to_string;
     my $sha512 = $self->{sha512}->to_string;
+
     if( length $sha256 ) { push( @LINES, $sha256 ); }
     if( length $sha384 ) { push( @LINES, $sha384 ); }
     if( length $sha512 ) { push( @LINES, $sha512 ); }
