@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Manifest::ScanFiles.pm
+# FileCatalog::ScanFiles.pm
 #
 # Copyright © 2018 Felix Lechner <felix.lechner@lease-up.com>
 #
@@ -18,9 +18,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-package Manifest::ScanFiles;
+package FileCatalog::ScanFiles;
 
-our $VERSION = 0;
+our $VERSION = '0';
 
 use strict;
 use warnings;
@@ -41,7 +41,6 @@ use Manifest::Fields;
 our @EXPORT = qw(
   make_catalog
 );
-
 our @EXPORT_OK = qw();
 
 const my $MODE_TO_TYPE => {

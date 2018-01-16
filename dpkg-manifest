@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-our $VERSION = 0;
+our $VERSION = '0';
 
 use strict;
 use warnings;
@@ -28,43 +28,50 @@ no if $] >= 5.018, warnings => "experimental::smartmatch";
 use Carp;
 
 use lib q{.};
-use Manifest::ScanFiles;
-use Manifest::Write;
-use Manifest::Fields;
+use FileCatalog::Catalog;
+
+#use Manifest::ScanFiles;
+#use Manifest::Write;
+#use Manifest::Fields;
 
 my $numArgs = $#ARGV + 1;
 
-my $directory = q{.};
-$directory = $ARGV[0] if ( $numArgs == 1 );
+my $where = q{.};
+$where = $ARGV[0] if ( $numArgs == 1 );
 
 my $title = undef;
 
-my $include = {};
-foreach my $file_type (@FILE_TYPES) {
-    $include->{$file_type} = {};
-    foreach my $field_name (@FIELD_NAMES) {
-        $include->{$file_type}{$field_name} = 0;
-    }
-}
+# my $include = {};
+# foreach my $file_type (@FILE_TYPES) {
+#     $include->{$file_type} = {};
+#     foreach my $field_name (@FIELD_NAMES) {
+#         $include->{$file_type}{$field_name} = 0;
+#     }
+# }
 
-foreach my $file_type (@FILE_TYPES) {
-    $include->{$file_type}{$PATH}      = 1;
-    $include->{$file_type}{$FILE_TYPE} = 1;
-}
+# foreach my $file_type (@FILE_TYPES) {
+#     $include->{$file_type}{$PATH}      = 1;
+#     $include->{$file_type}{$FILE_TYPE} = 1;
+# }
 
-# regular files
-$include->{$REGULAR}{$CONTENT} = 1;
+# # regular files
+# $include->{$REGULAR}{$CONTENT} = 1;
 
-#$include->{$REGULAR}{$OWNER}   = 1;
+# #$include->{$REGULAR}{$OWNER}   = 1;
 
-# links
-$include->{$LINK}{$DESTINATION} = 1;
+# # links
+# $include->{$LINK}{$DESTINATION} = 1;
 
 my $extra_info = 1;
 
-my $catalog = make_catalog( $directory, $include );
+# my $catalog = make_catalog( $where, $include );
+my $catalog = FileCatalog::Catalog->new;
 
-# warn if link is dangling or points outside of tree
+$catalog->take_inventory( $where );
+
+# warn if links are dangling or point outside the tree
 
 # output results
-write_manifest( $catalog, $include, $title, $extra_info );
+$catalog->print;
+
+# write_manifest( $catalog, $include, $title, $extra_info );

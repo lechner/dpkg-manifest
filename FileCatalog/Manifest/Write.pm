@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Manifest::Write.pm
+# FileCatalog::Manifest::Write.pm
 #
 # Copyright © 2018 Felix Lechner <felix.lechner@lease-up.com>
 #
@@ -18,9 +18,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-package Manifest::Write;
+package FileCatalog::Manifest::Write;
 
-our $VERSION = 0;
+our $VERSION = '0';
 
 use strict;
 use warnings;
@@ -67,7 +67,7 @@ sub write_manifest {
     my $tally = $catalog->{$TALLY};
 
     print "$MANIFEST_VERSION: 0\n";
-    print "$TITLE: $title\n" if defined $title;
+    print "$TITLE: $title\n" if $title;
 
     foreach my $algorithm (@SHA_ALGORITHMS) {
         print_field( $catalog, $RUNNING_DIGEST, $algorithm );

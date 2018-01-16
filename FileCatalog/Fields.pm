@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Manifest::Fields.pm
+# FileCatalog::Fields.pm
 #
 # Copyright © 2018 Felix Lechner <felix.lechner@lease-up.com>
 #
@@ -18,15 +18,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-package Manifest::Fields;
-
-our $VERSION = 0;
+package FileCatalog::Fields;
 
 use strict;
 use warnings;
-
 use Exporter qw( import );
 use Const::Fast;
+
+our $VERSION = '0';
 
 our @EXPORT = qw(
   $MANIFEST_VERSION
