@@ -56,14 +56,21 @@ sub new {
     if ( exists $args{sha384} ) { $self->sha384( $args{sha384} ); }
     if ( exists $args{sha512} ) { $self->sha512( $args{sha512} ); }
 
-    $self->{size} = FileCatalog::Manifest::Field
-      ->new( name => q{Content-Size} );
+    $self->{exact_size} = FileCatalog::Manifest::Field
+      ->new( name => q{Content-Size}, specifier => q{exact} );
+    $self->{common_size} = FileCatalog::Manifest::Field
+      ->new( name => q{Content-Size}, specifier => q{common} );
     $self->{mtime_rfc2822} = FileCatalog::Manifest::Field
-      ->new( name => q{Last-Modified}, specifier => q{RFC2822} );
+      ->new( name => q{Last-Modified}, specifier => q{Mail} );
     $self->{mtime_rfc3339} = FileCatalog::Manifest::Field
-      ->new( name => q{Last-Modified}, specifier => q{RFC3339} );
+      ->new( name => q{Last-Modified}, specifier => q{ISO} );
 
-    if ( exists $args{size} ) { $self->{size}->value( $args{size} ); }
+    if ( exists $args{exact_size} ) {
+      $self->{exact_size}->value( $args{exact_size} );
+    }
+    if ( exists $args{common_size} ) {
+      $self->{common_size}->value( $args{common_size} );
+    }
     if ( exists $args{mtime_rfc2822} ) {
       $self->{mtime_rfc2822}->value( $args{mtime_rfc2822} );
     }
@@ -102,10 +109,16 @@ sub sha512 {
     return $self->{sha512}->value;
 }
 
-sub size {
+sub exact_size {
     my $self = shift;
-    if (@_) { $self->{size}->value(shift); }
-    return $self->{size}->value;
+    if (@_) { $self->{exact_size}->value(shift); }
+    return $self->{exact_size}->value;
+}
+
+sub common_size {
+    my $self = shift;
+    if (@_) { $self->{common_size}->value(shift); }
+    return $self->{common_size}->value;
 }
 
 sub mtime_rfc2822 {
@@ -142,23 +155,21 @@ sub extra_info {
     my $self = shift;
     my @LINES = ();
 
+    my $common_size = $self->{common_size}->to_string;
     my $magic = $self->{magic}->to_string;
     my $mime_type = $self->{mime_type}->to_string;
     my $encoding = $self->{encoding}->to_string;
-    my $size = $self->{size}->to_string;
     my $mtime_rfc2822 = $self->{mtime_rfc2822}->to_string;
     my $mtime_rfc3339 = $self->{mtime_rfc3339}->to_string;
 
-    if( length $mtime_rfc2822 ) { push( @LINES, $mtime_rfc2822 ); }
-    if( length $mtime_rfc3339 ) { push( @LINES, $mtime_rfc3339 ); }
-
+    if( length $common_size ) { push( @LINES, $common_size ); }
     if( length $magic ) { push( @LINES, $magic ); }
     if( length $mime_type ) { push( @LINES, $mime_type ); }
     if( length $encoding ) { push( @LINES, $encoding ); }
+    if( length $mtime_rfc2822 ) { push( @LINES, $mtime_rfc2822 ); }
+    if( length $mtime_rfc3339 ) { push( @LINES, $mtime_rfc3339 ); }
 
     push( @LINES, $self->SUPER::extra_info );
-
-    if( length $size ) { push( @LINES, $size ); }
 
     return @LINES;
 }
@@ -170,10 +181,12 @@ sub as_list {
     my $sha256 = $self->{sha256}->to_string;
     my $sha384 = $self->{sha384}->to_string;
     my $sha512 = $self->{sha512}->to_string;
+    my $exact_size = $self->{exact_size}->to_string;
 
     if( length $sha256 ) { push( @LINES, $sha256 ); }
     if( length $sha384 ) { push( @LINES, $sha384 ); }
     if( length $sha512 ) { push( @LINES, $sha512 ); }
+    if( length $exact_size ) { push( @LINES, $exact_size ); }
 
     return @LINES;
 }

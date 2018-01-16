@@ -25,11 +25,12 @@ use warnings;
 use feature qw(switch);
 no if $] >= 5.018, warnings => "experimental::smartmatch";
 
-use Fcntl ':mode';
-use File::LibMagic;
 use Digest::SHA;
 use DateTime::Format::RFC3339;
 use DateTime::Format::Mail;
+use Number::Format;
+use Fcntl ':mode';
+use File::LibMagic;
 use Const::Fast;
 
 use FileCatalog::Manifest::RegularFile;
@@ -93,7 +94,11 @@ sub path {
                     $manifest->mtime_rfc3339( $rfc3339
                                               ->format_datetime( $utc ) );
                     
-                    $manifest->size($size);
+                    $manifest->exact_size($size);
+                    my $nf = Number::Format->new;
+                    my $common = $nf->format_bytes( $size, mode => 'iec',
+                                                    precision => 1 );
+                    $manifest->common_size( $common );
 
                     $manifest->sha256(
                         pad_base64(
