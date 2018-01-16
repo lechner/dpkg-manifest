@@ -110,20 +110,20 @@ sub extra_info {
     my $self = shift;
     my @LINES = ();
   
-    my $uid = $self->{uid}->to_string;
-    my $gid = $self->{gid}->to_string;
-    if( length $uid ) { push( @LINES, $uid ); }
-    if( length $gid ) { push( @LINES, $gid ); }
+    my $mtime = $self->{mtime}->to_string;
+    my $mode = $self->{mode}->to_string;
+    if( length $mtime ) { push( @LINES, $mtime ); }
+    if( length $mode ) { push( @LINES, $mode ); }
 
     my $owner = $self->{owner}->to_string;
     my $group = $self->{group}->to_string;
     if( length $owner ) { push( @LINES, $owner ); }
     if( length $group ) { push( @LINES, $group ); }
 
-    my $mode = $self->{mode}->to_string;
-    my $mtime = $self->{mtime}->to_string;
-    if( length $mode ) { push( @LINES, $mode ); }
-    if( length $mtime ) { push( @LINES, $mtime ); }
+    my $uid = $self->{uid}->to_string;
+    my $gid = $self->{gid}->to_string;
+    if( length $uid ) { push( @LINES, $uid ); }
+    if( length $gid ) { push( @LINES, $gid ); }
 
     return @LINES;
 }

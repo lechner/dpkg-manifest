@@ -42,7 +42,6 @@ use FileCatalog::Manifest::Socket;
 our $VERSION = '0';
 
 const my $EMPTY           => q{};
-const my @EMPTY_LIST      => ();
 const my $EQUALS          => q{=};
 const my $BASE64_WORDSIZE => 4;
 
@@ -151,8 +150,10 @@ sub path {
             $manifest->gid($gid);
             $manifest->owner( getpwuid $uid );
             $manifest->group( getgrgid $gid );
-#            my $rfc3339 = DateTime::Format::RFC3339->new;
-#            $manifest->mtime( $rfc3339->format_datetime( gmtime($mtime) ) );
+            my $utc = DateTime->from_epoch( epoch => $mtime )
+              ->set_time_zone('UTC');
+            my $rfc3339 = DateTime::Format::RFC3339->new;
+            $manifest->mtime( $rfc3339->format_datetime( $utc ) );
             $manifest->mode( sprintf "%04o", S_IMODE($mode) );
 
             $self->{manifest} = $manifest;
@@ -160,11 +161,6 @@ sub path {
     }
     return $self->{path};
 }
-
-#sub manifest {
-#    my $self = shift;
-#    return $self->{manifest};
-#}
 
 sub type {
     my $self = shift;
@@ -179,7 +175,7 @@ sub as_list {
     if ( exists $self->{manifest} ) {
       return $self->{manifest}->as_list;
     }
-    return @EMPTY_LIST;
+    return ();
 }
 
 sub extra_info {
@@ -187,7 +183,7 @@ sub extra_info {
     if ( exists $self->{manifest} ) {
       return $self->{manifest}->extra_info;
     }
-    return @EMPTY_LIST;
+    return ();
 }
 
 sub print {

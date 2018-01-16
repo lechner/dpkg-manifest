@@ -26,13 +26,12 @@ use feature qw(switch);
 no if $] >= 5.018, warnings => "experimental::smartmatch";
 
 use Carp;
+use Const::Fast;
 
 use lib q{.};
 use FileCatalog::Catalog;
 
-#use Manifest::ScanFiles;
-#use Manifest::Write;
-#use Manifest::Fields;
+const my $NEWLINE => qq{\n};
 
 my $numArgs = $#ARGV + 1;
 
@@ -64,7 +63,6 @@ my $title = undef;
 
 my $extra_info = 1;
 
-# my $catalog = make_catalog( $where, $include );
 my $catalog = FileCatalog::Catalog->new;
 
 $catalog->take_inventory( $where );
@@ -72,6 +70,7 @@ $catalog->take_inventory( $where );
 # warn if links are dangling or point outside the tree
 
 # output results
-$catalog->print;
+my @OUTPUT = $catalog->as_list( $extra_info );
+print join( $NEWLINE, @OUTPUT ) . $NEWLINE;
 
-# write_manifest( $catalog, $include, $title, $extra_info );
+#$catalog->print;

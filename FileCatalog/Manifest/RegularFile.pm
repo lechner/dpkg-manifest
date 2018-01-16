@@ -118,16 +118,18 @@ sub encoding {
 
 sub extra_info {
     my $self = shift;
-    my @LINES = $self->SUPER::extra_info;
+    my @LINES = ();
 
     my $magic = $self->{magic}->to_string;
     my $mime_type = $self->{mime_type}->to_string;
+    my $encoding = $self->{encoding}->to_string;
     if( length $magic ) { push( @LINES, $magic ); }
     if( length $mime_type ) { push( @LINES, $mime_type ); }
-
-    my $encoding = $self->{encoding}->to_string;
-    my $size = $self->{size}->to_string;
     if( length $encoding ) { push( @LINES, $encoding ); }
+
+    push( @LINES, $self->SUPER::extra_info );
+
+    my $size = $self->{size}->to_string;
     if( length $size ) { push( @LINES, $size ); }
 
     return @LINES;
