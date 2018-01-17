@@ -42,14 +42,13 @@ sub new {
     $self->{uid}   = FileCatalog::Manifest::Field->new( name => q{UID} );
     $self->{gid}   = FileCatalog::Manifest::Field->new( name => q{GID} );
 
-    # works for derived classes too if super constructor is called last there
-    foreach my $field ( keys %{$self} ) {
-      if( $self->{$field}->isa('FileCatalog::Manifest::Field' ) ) {
-        if( exists $args{$field} ) {
-          $self->{$field}->value( $args{$field} );
-        }
-      }
-    }
+    $self->set_value_from_args( 'path', %args );
+    $self->set_value_from_args( 'type', %args );
+    $self->set_value_from_args( 'mode', %args );
+    $self->set_value_from_args( 'owner', %args );
+    $self->set_value_from_args( 'group', %args );
+    $self->set_value_from_args( 'uid', %args );
+    $self->set_value_from_args( 'gid', %args );
 
     return $self;
 }

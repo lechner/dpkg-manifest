@@ -209,7 +209,7 @@ sub formatted {
 
     my @EXTRA_INFO = $self->extra_info;
     if ($print_extra_info && scalar @EXTRA_INFO) {
-      push( @LINES, '--- for information only ---' );
+      push( @LINES, '--- unverified data follows ---' );
       push( @LINES, @EXTRA_INFO );
     }
     

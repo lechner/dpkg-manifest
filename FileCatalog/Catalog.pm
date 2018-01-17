@@ -31,18 +31,14 @@ use Carp;
 use Const::Fast;
 use Cwd;
 use File::Find::Rule;
-use DateTime::Format::RFC3339;
-use DateTime::Format::Mail;
 
-use FileCatalog::Manifest::Header;
+use FileCatalog::Envelope;
 use FileCatalog::Item;
 
 const my $EMPTY => q{};
 const my $DOT => q{.};
 const my $SLASH => q{/};
 const my $NEWLINE => qq{\n};
-
-const my $standard => '0';
 
 sub new {
     my ( $class, %args ) = @_;
@@ -52,8 +48,6 @@ sub new {
 
     $self->{Items} = {};
     $self->{Tally} = {};
-
-    $self->{Header} = FileCatalog::Manifest::Header->new;
 
     return $self;
 }
@@ -89,22 +83,16 @@ sub take_inventory {
     my $title = "Upstream Release";
     my $version = "3.2.3";
 
-    my $header = $self->{Header};
-    $header->standard( $standard );
-    $header->title( $title );
-    $header->version( $version );
-
-    my $now = DateTime->now->set_time_zone( 'UTC' );
-    my $rfc2822 = DateTime::Format::Mail->new;
-    my $rfc3339 = DateTime::Format::RFC3339->new;
-    $header->created_rfc2822( $rfc2822->format_datetime( $now ) );
-    $header->created_rfc3339( $rfc3339->format_datetime( $now ) );
-
     my $item_tally = 0;
     foreach my $file_type ( keys %{$tally} ) {
       $item_tally += $tally->{$file_type};
     }
-    $header->item_tally( $item_tally );
+
+    $self->{Envelope} = FileCatalog::Envelope
+      ->new( title => $title,
+             version => $version,
+             item_tally => $item_tally
+             );
 }
 
 sub as_list {
@@ -112,21 +100,14 @@ sub as_list {
 
     my ( $print_extra_info ) = @_;
 
-    my $header = $self->{Header};
-    
     my @LINES = ();
     
-    push( @LINES, $header->{title}->to_string );
-    push( @LINES, $header->{version}->to_string );
-    push( @LINES, $header->{created_rfc2822}->to_string );
-    push( @LINES, $header->{created_rfc3339}->to_string );
-    push( @LINES, $header->{item_tally}->to_string );
-    push( @LINES, $EMPTY );
-    push( @LINES, '*  *  *  CATALOG STARTS BELOW  *  *  *' );
+    push( @LINES, $self->{Envelope}->as_list );
     push( @LINES, $EMPTY );
 
-    foreach my $key ( sort keys %{$self->{Items}} ) {
-        my $item = $self->{Items}{$key};
+    my @CATALOG_PATHS = sort keys %{$self->{Items}};
+    foreach my $path ( @CATALOG_PATHS ) {
+        my $item = $self->{Items}{$path};
         push( @LINES, $item->formatted( $print_extra_info ) );
         push( @LINES, $EMPTY );
     }

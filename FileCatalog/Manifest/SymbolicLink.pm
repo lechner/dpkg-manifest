@@ -33,10 +33,11 @@ sub new {
     my ( $class, %args ) = @_;
     my $self = $class->SUPER::new( %args );
 
-    $self->type( q{Symbolic Link} );
+    $self->type( q{Link} );
 
     $self->{destination} = FileCatalog::Manifest::Field
       ->new( name => q{Destination} );
+
     $self->set_value_from_args( 'destination', %args);
 
     return $self;

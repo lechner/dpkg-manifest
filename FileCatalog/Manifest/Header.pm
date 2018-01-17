@@ -30,45 +30,51 @@ our $VERSION = '0';
 
 const my $NEWLINE => qq{\n};
 
+const my $manifest_format => '0';
+
 sub new {
     my ( $class, %args ) = @_;
     my $self = bless( {}, $class );
 
-    $self->{standard} = FileCatalog::Manifest::Field
-      ->new( name => q{Manifest-Format} );
-
-    if ( exists $args{standard} ) {
-      $self->{standard}->value( $args{standard} );
-    }
+    $self->{manifest_format} = FileCatalog::Manifest::Field
+      ->new( name => q{Manifest-Format}, value => $manifest_format );
 
     $self->{title} = FileCatalog::Manifest::Field
       ->new( name => q{Title} );
     $self->{version} = FileCatalog::Manifest::Field
       ->new( name => q{Version} );
-    $self->{created_rfc2822} = FileCatalog::Manifest::Field
-      ->new( name => q{Timestamp}, specifier => q{Mail Format} );
-    $self->{created_rfc3339} = FileCatalog::Manifest::Field
-      ->new( name => q{Timestamp}, specifier => q{ISO Format} );
-
-    if ( exists $args{title} ) { $self->{title}->value( $args{title} ); }
-    if ( exists $args{version} ) { $self->{version}->value( $args{version} ); }
-    if ( exists $args{created_rfc2822} ) {
-      $self->{created_rfc2822}->value( $args{created_rfc2822} ); }
-    if ( exists $args{created_rfc3339} ) {
-      $self->{created_rfc3339}->value( $args{created_rfc3339} ); }
+    $self->{timestamp_rfc2822} = FileCatalog::Manifest::Field
+      ->new( name => q{Timestamp}, specifier => q{Mail-Format} );
+    $self->{timestamp_rfc3339} = FileCatalog::Manifest::Field
+      ->new( name => q{Timestamp}, specifier => q{ISO-Format} );
 
     $self->{item_tally} = FileCatalog::Manifest::Field
       ->new( name => q{Tally}, specifier => q{Items} );
-    if ( exists $args{item_tally} ) {
-      $self->{item_tally}->value( $args{item_tally} ); }
 
+#    $self->set_value_from_args( 'manifest_format', %args );
+    $self->set_value_from_args( 'title', %args );
+    $self->set_value_from_args( 'version', %args );
+    $self->set_value_from_args( 'timestamp_rfc2822', %args );
+    $self->set_value_from_args( 'timestamp_rfc3339', %args );
+    $self->set_value_from_args( 'item_tally', %args );
+    
     return $self;
 }
 
-sub standard {
+sub set_value_from_args {
     my $self = shift;
-    if (@_) { $self->{standard}->value( shift ); }
-    return $self->{standard}->value;
+    my ( $field, %args ) = @_;
+    if( exists $self->{$field}
+        && $self->{$field}->isa('FileCatalog::Manifest::Field') ) {
+      $self->{$field}->set_value_from_args( $field, %args );
+    }
+    return;
+}
+
+sub manifest_format {
+    my $self = shift;
+    if (@_) { $self->{manifest_format}->value( shift ); }
+    return $self->{manifest_format}->value;
 }
 
 sub title {
@@ -83,16 +89,16 @@ sub version {
     return $self->{version}->value;
 }
 
-sub created_rfc2822 {
+sub timestamp_rfc2822 {
     my $self = shift;
-    if (@_) { $self->{created_rfc2822}->value( shift ); }
-    return $self->{created_rfc2822}->value;
+    if (@_) { $self->{timestamp_rfc2822}->value( shift ); }
+    return $self->{timestamp_rfc2822}->value;
 }
 
-sub created_rfc3339 {
+sub timestamp_rfc3339 {
     my $self = shift;
-    if (@_) { $self->{created_rfc3339}->value( shift ); }
-    return $self->{created_rfc3339}->value;
+    if (@_) { $self->{timestamp_rfc3339}->value( shift ); }
+    return $self->{timestamp_rfc3339}->value;
 }
 
 sub item_tally {
@@ -105,18 +111,6 @@ sub extra_info {
     my $self = shift;
     my @LINES = ();
   
-    my $title = $self->{title}->to_string;
-    my $version = $self->{version}->to_string;
-    my $created_rfc2822 = $self->{created_rfc2822}->to_string;
-    my $created_rfc3339 = $self->{created_rfc3339}->to_string;
-    my $item_tally = $self->{item_tally}->to_string;
-
-    if( length $title ) { push( @LINES, $title ); }
-    if( length $version ) { push( @LINES, $version ); }
-    if( length $created_rfc2822 ) { push( @LINES, $created_rfc2822 ); }
-    if( length $created_rfc3339 ) { push( @LINES, $created_rfc3339 ); }
-    if( length $item_tally ) { push( @LINES, $item_tally ); }
-
     return @LINES;
 }
 
@@ -124,8 +118,19 @@ sub as_list {
     my $self = shift;
     my @LINES = ();
 
-    my $standard = $self->{standard}->to_string;
-    if( length $standard ) { push( @LINES, $standard ); }
+    my $title = $self->{title}->to_string;
+    my $version = $self->{version}->to_string;
+    my $timestamp_rfc2822 = $self->{timestamp_rfc2822}->to_string;
+    my $timestamp_rfc3339 = $self->{timestamp_rfc3339}->to_string;
+    my $manifest_format = $self->{manifest_format}->to_string;
+    my $item_tally = $self->{item_tally}->to_string;
+
+    if( length $title ) { push( @LINES, $title ); }
+    if( length $version ) { push( @LINES, $version ); }
+    if( length $timestamp_rfc2822 ) { push( @LINES, $timestamp_rfc2822 ); }
+    if( length $timestamp_rfc3339 ) { push( @LINES, $timestamp_rfc3339 ); }
+    if( length $manifest_format ) { push( @LINES, $manifest_format ); }
+    if( length $item_tally ) { push( @LINES, $item_tally ); }
 
     return @LINES;
 }

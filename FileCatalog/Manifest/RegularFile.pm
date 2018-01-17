@@ -44,31 +44,14 @@ sub new {
     $self->{sha512} = FileCatalog::Manifest::Field
       ->new( name => $CONTENT_DIGEST, specifier => q{SHA-512} );
 
-    if ( exists $args{sha256} ) { $self->sha256( $args{sha256} ); }
-    if ( exists $args{sha384} ) { $self->sha384( $args{sha384} ); }
-    if ( exists $args{sha512} ) { $self->sha512( $args{sha512} ); }
-
     $self->{exact_size} = FileCatalog::Manifest::Field
-      ->new( name => q{Content-Size}, specifier => q{exact} );
+      ->new( name => q{Content-Size}, specifier => q{bytes} );
     $self->{common_size} = FileCatalog::Manifest::Field
-      ->new( name => q{Content-Size}, specifier => q{common} );
+      ->new( name => q{Content-Size}, specifier => q{easy} );
     $self->{mtime_rfc2822} = FileCatalog::Manifest::Field
-      ->new( name => q{Last-Modified}, specifier => q{Mail Format} );
+      ->new( name => q{Last-Modified}, specifier => q{RFC2822} );
     $self->{mtime_rfc3339} = FileCatalog::Manifest::Field
-      ->new( name => q{Last-Modified}, specifier => q{ISO Format} );
-
-    if ( exists $args{exact_size} ) {
-      $self->{exact_size}->value( $args{exact_size} );
-    }
-    if ( exists $args{common_size} ) {
-      $self->{common_size}->value( $args{common_size} );
-    }
-    if ( exists $args{mtime_rfc2822} ) {
-      $self->{mtime_rfc2822}->value( $args{mtime_rfc2822} );
-    }
-    if ( exists $args{mtime_rfc3339} ) {
-      $self->{mtime_rfc3339}->value( $args{mtime_rfc3339} );
-    }
+      ->new( name => q{Last-Modified}, specifier => q{RFC3339} );
 
     $self->{magic} = FileCatalog::Manifest::Field->new( name => q{Magic} );
     $self->{mime_type} =
@@ -76,9 +59,16 @@ sub new {
     $self->{encoding} =
       FileCatalog::Manifest::Field->new( name => q{Encoding} );
 
-    if ( exists $args{magic} )     { $self->magic( $args{magic} ); }
-    if ( exists $args{mime_type} ) { $self->mime_type( $args{mime_type} ); }
-    if ( exists $args{encoding} )  { $self->encoding( $args{encoding} ); }
+    $self->set_value_from_args( 'sha256', %args );
+    $self->set_value_from_args( 'sha384', %args );
+    $self->set_value_from_args( 'sha512', %args );
+    $self->set_value_from_args( 'exact_size', %args );
+    $self->set_value_from_args( 'common_size', %args );
+    $self->set_value_from_args( 'mtime_rfc2822', %args );
+    $self->set_value_from_args( 'mtime_rfc3339', %args );
+    $self->set_value_from_args( 'magic', %args );
+    $self->set_value_from_args( 'mime_type', %args );
+    $self->set_value_from_args( 'emcoding', %args );
 
     return $self;
 }
@@ -154,10 +144,10 @@ sub extra_info {
     my $mtime_rfc2822 = $self->{mtime_rfc2822}->to_string;
     my $mtime_rfc3339 = $self->{mtime_rfc3339}->to_string;
 
-    if( length $common_size ) { push( @LINES, $common_size ); }
     if( length $magic ) { push( @LINES, $magic ); }
     if( length $mime_type ) { push( @LINES, $mime_type ); }
     if( length $encoding ) { push( @LINES, $encoding ); }
+    if( length $common_size ) { push( @LINES, $common_size ); }
     if( length $mtime_rfc2822 ) { push( @LINES, $mtime_rfc2822 ); }
     if( length $mtime_rfc3339 ) { push( @LINES, $mtime_rfc3339 ); }
 
