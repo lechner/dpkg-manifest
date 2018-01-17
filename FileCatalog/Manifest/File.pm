@@ -36,25 +36,34 @@ sub new {
 
     $self->{path} = FileCatalog::Manifest::Field->new( name => q{Path} );
     $self->{type} = FileCatalog::Manifest::Field->new( name => q{File-Type} );
-
-    if ( exists $args{path} ) { $self->{path}->value( $args{path} ); }
-    if ( exists $args{type} ) { $self->{type}->value( $args{type} ); }
-
-    $self->{uid}   = FileCatalog::Manifest::Field->new( name => q{UID} );
-    $self->{gid}   = FileCatalog::Manifest::Field->new( name => q{GID} );
+    $self->{mode}  = FileCatalog::Manifest::Field->new( name => q{File-Mode} );
     $self->{owner} = FileCatalog::Manifest::Field->new( name => q{Owner} );
     $self->{group} = FileCatalog::Manifest::Field->new( name => q{Group} );
-    $self->{mode}  = FileCatalog::Manifest::Field->new( name => q{File-Mode} );
+    $self->{uid}   = FileCatalog::Manifest::Field->new( name => q{UID} );
+    $self->{gid}   = FileCatalog::Manifest::Field->new( name => q{GID} );
 
-    if ( exists $args{uid} )   { $self->{uid}->value( $args{uid} ); }
-    if ( exists $args{gid} )   { $self->{gid}->value( $args{gid} ); }
-    if ( exists $args{owner} ) { $self->{owner}->value( $args{owner} ); }
-    if ( exists $args{group} ) { $self->{group}->value( $args{group} ); }
-    if ( exists $args{mode} )  { $self->{mode}->value( $args{mode} ); }
+    # works for derived classes too if super constructor is called last there
+    foreach my $field ( keys %{$self} ) {
+      if( $self->{$field}->isa('FileCatalog::Manifest::Field' ) ) {
+        if( exists $args{$field} ) {
+          $self->{$field}->value( $args{$field} );
+        }
+      }
+    }
 
     return $self;
 }
 
+sub set_value_from_args {
+    my $self = shift;
+    my ( $field, %args ) = @_;
+    if( exists $self->{$field}
+        && $self->{$field}->isa('FileCatalog::Manifest::Field') ) {
+      $self->{$field}->set_value_from_args( $field, %args );
+    }
+    return;
+}
+    
 sub path {
     my $self = shift;
     if (@_) { $self->{path}->value( shift ); }

@@ -34,14 +34,10 @@ sub new {
     my $self = $class->SUPER::new( %args );
 
     $self->type( q{Symbolic Link} );
-    if ( exists $args{path} ) { $self->path( $args{path} ); }
 
-    $self->{destination} =
-      FileCatalog::Manifest::Field->new( name => q{Destination} );
-
-    if ( exists $args{destination} ) {
-        $self->destination->value( $args{destination} );
-    }
+    $self->{destination} = FileCatalog::Manifest::Field
+      ->new( name => q{Destination} );
+    $self->set_value_from_args( 'destination', %args);
 
     return $self;
 }

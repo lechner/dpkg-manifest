@@ -37,20 +37,12 @@ sub new {
 
     $self->type( q{Regular} );
 
-    if ( exists $args{path} ) { $self->path( $args{path} ); }
-
-    $self->{sha256} = FileCatalog::Manifest::Field->new(
-        name      => $CONTENT_DIGEST,
-        specifier => q{SHA-256}
-    );
-    $self->{sha384} = FileCatalog::Manifest::Field->new(
-        name      => $CONTENT_DIGEST,
-        specifier => q{SHA-384}
-    );
-    $self->{sha512} = FileCatalog::Manifest::Field->new(
-        name      => $CONTENT_DIGEST,
-        specifier => q{SHA-512}
-    );
+    $self->{sha256} = FileCatalog::Manifest::Field
+      ->new( name => $CONTENT_DIGEST, specifier => q{SHA-256} );
+    $self->{sha384} = FileCatalog::Manifest::Field
+      ->new( name => $CONTENT_DIGEST, specifier => q{SHA-384} );
+    $self->{sha512} = FileCatalog::Manifest::Field
+      ->new( name => $CONTENT_DIGEST, specifier => q{SHA-512} );
 
     if ( exists $args{sha256} ) { $self->sha256( $args{sha256} ); }
     if ( exists $args{sha384} ) { $self->sha384( $args{sha384} ); }
@@ -61,9 +53,9 @@ sub new {
     $self->{common_size} = FileCatalog::Manifest::Field
       ->new( name => q{Content-Size}, specifier => q{common} );
     $self->{mtime_rfc2822} = FileCatalog::Manifest::Field
-      ->new( name => q{Last-Modified}, specifier => q{Mail} );
+      ->new( name => q{Last-Modified}, specifier => q{Mail Format} );
     $self->{mtime_rfc3339} = FileCatalog::Manifest::Field
-      ->new( name => q{Last-Modified}, specifier => q{ISO} );
+      ->new( name => q{Last-Modified}, specifier => q{ISO Format} );
 
     if ( exists $args{exact_size} ) {
       $self->{exact_size}->value( $args{exact_size} );

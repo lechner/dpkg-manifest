@@ -198,6 +198,24 @@ sub extra_info {
     return ();
 }
 
+sub formatted {
+    my $self = shift;
+
+    my ( $print_extra_info ) = @_;
+
+    my @LINES = ();
+
+    push( @LINES, $self->as_list );
+
+    my @EXTRA_INFO = $self->extra_info;
+    if ($print_extra_info && scalar @EXTRA_INFO) {
+      push( @LINES, '--- for information only ---' );
+      push( @LINES, @EXTRA_INFO );
+    }
+    
+    return @LINES;
+}
+
 sub print {
     my $self = shift;
     print $self->to_string;

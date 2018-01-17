@@ -31,8 +31,6 @@ sub new {
     my $self = $class->SUPER::new( %args );
 
     $self->type( q{Socket} );
-    if ( exists $args{path} ) { $self->path( $args{path} ) }
-
     return $self;
 }
 

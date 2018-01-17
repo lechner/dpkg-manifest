@@ -44,6 +44,15 @@ sub new {
     return $self;
 }
 
+sub set_value_from_args {
+  my $self = shift;
+  my ($key, %elsewhere) = @_;
+
+  if( exists $elsewhere{$key} ) {
+    $self->value( $elsewhere{$key} );
+  }
+}
+
 sub name {
     my $self = shift;
     if (@_) { $self->{name} = shift; }
