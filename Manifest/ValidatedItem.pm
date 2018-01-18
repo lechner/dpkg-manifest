@@ -77,78 +77,69 @@ sub path {
               = lstat $path
               or croak("Cannot stat $path");
 
-            my $entry;
+            my $item;
 
             given ( S_IFMT($mode) ) {
 
                 when (S_IFREG) {
-                    $entry = Manifest::Item::RegularFile->new( path => $path );
+                    $item = Manifest::Item::RegularFile->new( path => $path );
                     my $utc = DateTime->from_epoch( epoch => $mtime )
                       ->set_time_zone('UTC');
-                    $entry->mtime( $utc );
+                    $item->mtime( $utc );
 
-                    $entry->exact_size($size);
+                    $item->exact_size($size);
                     my $nf     = Number::Format->new;
                     my $common = $nf->format_bytes(
                         $size,
                         mode      => 'iec',
                         precision => 1
                     );
-                    $entry->common_size($common);
+                    $item->common_size($common);
 
-                    $entry->sha256(
-                        pad_base64(
-                            Digest::SHA->new(q{SHA-256})->addfile($path)
-                              ->b64digest
-                        )
+                    $item->sha256( Digest::SHA->new(q{SHA-256})
+                                   ->addfile($path)->digest
                     );
-                    $entry->sha384(
-                        pad_base64(
-                            Digest::SHA->new(q{SHA-384})->addfile($path)
-                              ->b64digest
-                        )
+                    $item->sha384( Digest::SHA->new(q{SHA-384})
+                                   ->addfile($path)->digest
                     );
-                    $entry->sha512(
-                        pad_base64(
-                            Digest::SHA->new(q{SHA-512})->addfile($path)
-                              ->b64digest
-                        )
+                    $item->sha512( Digest::SHA->new(q{SHA-512})
+                                   ->addfile($path)->digest
                     );
 
                     my $info = File::LibMagic->new->info_from_filename($path);
-                    $entry->magic( $info->{description} );
-                    $entry->mime_type( $info->{mime_type} );
-                    $entry->encoding( $info->{encoding} );
+                    $item->magic( $info->{description} );
+                    $item->mime_type( $info->{mime_type} );
+                    $item->encoding( $info->{encoding} );
 
                 }
 
                 when (S_IFDIR) {
-                    $entry =
+                    $item =
                       Manifest::Item::Directory->new( path => $path );
                 }
 
                 when (S_IFLNK) {
-                    $entry =
+                    $item =
                       Manifest::Item::SymbolicLink->new( path => $path );
-                    $entry->destination( readlink $path );
+                    $item->destination( readlink $path );
                 }
 
                 when (S_IFCHR) {
-                    $entry = Manifest::Item::CharacterDevice->new(
+                    $item = Manifest::Item::CharacterDevice->new(
                         path => $path );
                 }
 
                 when (S_IFBLK) {
-                    $entry =
+                    $item =
                       Manifest::Item::BlockDevice->new( path => $path );
                 }
 
                 when (S_IFIFO) {
-                    $entry = Manifest::Item::Fifo->new( path => $path );
+                    $item = Manifest::Item::Fifo->new( path => $path );
                 }
 
                 when (S_IFSOCK) {
-                    $entry =
+                    $item =
                       Manifest::Item::Socket->new( path => $path );
                 }
 
@@ -157,13 +148,13 @@ sub path {
                 }
             }
 
-            $entry->mode( sprintf '%04o', S_IMODE($mode) );
-            $entry->owner( getpwuid $uid );
-            $entry->group( getgrgid $gid );
-            $entry->uid($uid);
-            $entry->gid($gid);
+            $item->mode( sprintf '%04o', S_IMODE($mode) );
+            $item->owner( getpwuid $uid );
+            $item->group( getgrgid $gid );
+            $item->uid($uid);
+            $item->gid($gid);
 
-            $self->{entry} = $entry;
+            $self->{item} = $item;
         }
     }
     return $self->{path};
@@ -171,24 +162,24 @@ sub path {
 
 sub type {
     my $self = shift;
-    if ( exists $self->{entry} ) {
-        return $self->{entry}->type;
+    if ( exists $self->{item} ) {
+        return $self->{item}->type;
     }
     return $EMPTY;
 }
 
 sub as_list {
     my $self = shift;
-    if ( exists $self->{entry} ) {
-        return $self->{entry}->as_list;
+    if ( exists $self->{item} ) {
+        return $self->{item}->as_list;
     }
     return ();
 }
 
 sub extra_info {
     my $self = shift;
-    if ( exists $self->{entry} ) {
-        return $self->{entry}->extra_info;
+    if ( exists $self->{item} ) {
+        return $self->{item}->extra_info;
     }
     return ();
 }

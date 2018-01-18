@@ -23,6 +23,7 @@ use strict;
 use warnings;
 use Const::Fast;
 use Manifest::Field::SizeInBytes;
+use Manifest::Field::AnnotatedBinary;
 
 use parent 'Manifest::Item::File';
 
@@ -37,15 +38,15 @@ sub new {
 
     $self->type(q{Regular});
 
-    $self->{sha256} = Manifest::Field::AnnotatedText->new(
+    $self->{sha256} = Manifest::Field::AnnotatedBinary->new(
         label      => $CONTENT_DIGEST,
         note => q{SHA-256}
     );
-    $self->{sha384} = Manifest::Field::AnnotatedText->new(
+    $self->{sha384} = Manifest::Field::AnnotatedBinary->new(
         label      => $CONTENT_DIGEST,
         note => q{SHA-384}
     );
-    $self->{sha512} = Manifest::Field::AnnotatedText->new(
+    $self->{sha512} = Manifest::Field::AnnotatedBinary->new(
         label      => $CONTENT_DIGEST,
         note => q{SHA-512}
     );
@@ -63,9 +64,9 @@ sub new {
     $self->{mime_type} = Manifest::Field::Text->new( label => q{Mime-Type} );
     $self->{encoding} = Manifest::Field::Text->new( label => q{Encoding} );
 
-    $self->set_value_from_args( 'sha256',        %args );
-    $self->set_value_from_args( 'sha384',        %args );
-    $self->set_value_from_args( 'sha512',        %args );
+#    $self->set_value_from_args( 'sha256',        %args );
+#    $self->set_value_from_args( 'sha384',        %args );
+#    $self->set_value_from_args( 'sha512',        %args );
 #    $self->set_value_from_args( 'exact_size',    %args );
     $self->set_value_from_args( 'common_size',   %args );
     $self->set_value_from_args( 'mtime',         %args );
@@ -78,19 +79,19 @@ sub new {
 
 sub sha256 {
     my $self = shift;
-    if (@_) { $self->{sha256}->text(shift); }
+    if (@_) { $self->{sha256}->binary(shift); }
     return $self->{sha256}->text;
 }
 
 sub sha384 {
     my $self = shift;
-    if (@_) { $self->{sha384}->text(shift); }
+    if (@_) { $self->{sha384}->binary(shift); }
     return $self->{sha384}->text;
 }
 
 sub sha512 {
     my $self = shift;
-    if (@_) { $self->{sha512}->text(shift); }
+    if (@_) { $self->{sha512}->binary(shift); }
     return $self->{sha512}->text;
 }
 
