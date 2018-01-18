@@ -30,6 +30,8 @@ no if $] >= 5.018, warnings => "experimental::smartmatch";
 use Carp;
 use Const::Fast;
 use Cwd;
+use SHARYANTO::String::Util qw(trim);
+use List::Util qw(min max);
 use File::Find::Rule;
 
 use FileCatalog::Envelope;
@@ -38,6 +40,8 @@ use FileCatalog::Item;
 const my $EMPTY => q{};
 const my $DOT => q{.};
 const my $SLASH => q{/};
+const my $SPACE => q{ };
+const my $DASH => q{-};
 const my $NEWLINE => qq{\n};
 
 sub new {
@@ -95,21 +99,50 @@ sub take_inventory {
              );
 }
 
+sub label {
+    my $self = shift;
+    my ( $separator, $pad, $text, $width ) = @_;
+
+    my $trimmed = trim $text;
+
+    my $sides = $width - length $trimmed;
+    my $rightside = max( 0, int( 0.5 + $sides / 2 ) );
+    my $leftside = max( 0, $sides - $rightside );
+
+    my $leftline = $separator x max( 0, $leftside - $pad );
+    my $rightline = $separator x max( 0, $rightside - $pad );
+    
+    my $leftpad = $SPACE x max( 0, min( $pad, $leftside - $pad ) );
+    my $rightpad = $SPACE x max( 0, min( $pad, $rightside - $pad ) );
+    
+    return $leftline . $leftpad . $trimmed . $rightpad . $rightline;
+}
+
 sub as_list {
     my $self = shift;
-
     my ( $print_extra_info ) = @_;
 
     my @LINES = ();
-    
-    push( @LINES, $self->{Envelope}->as_list );
-    push( @LINES, $EMPTY );
 
+    my @ENVELOPE_LINES = $self->{Envelope}->as_list;
+
+    if( scalar @ENVELOPE_LINES ) {
+      push( @LINES, $self->label( $DASH, 1, 'Shipping Manifest', 72 ) );
+      push( @LINES, @ENVELOPE_LINES );
+      push( @LINES, $self->label( $DASH, 1, 'Validated From Here', 72 ) );
+    }
+
+    
     my @CATALOG_PATHS = sort keys %{$self->{Items}};
+    my $countdown = scalar @CATALOG_PATHS;
+    
     foreach my $path ( @CATALOG_PATHS ) {
         my $item = $self->{Items}{$path};
         push( @LINES, $item->formatted( $print_extra_info ) );
-        push( @LINES, $EMPTY );
+        $countdown -= 1;
+        if( $countdown > 1 ) {
+            push( @LINES, $EMPTY );
+        }
     }
     return @LINES;
 }

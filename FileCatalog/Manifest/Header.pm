@@ -44,9 +44,9 @@ sub new {
     $self->{version} = FileCatalog::Manifest::Field
       ->new( name => q{Version} );
     $self->{timestamp_rfc2822} = FileCatalog::Manifest::Field
-      ->new( name => q{Timestamp}, specifier => q{Mail-Format} );
+      ->new( name => q{Timestamp}, specifier => q{RFC2822} );
     $self->{timestamp_rfc3339} = FileCatalog::Manifest::Field
-      ->new( name => q{Timestamp}, specifier => q{ISO-Format} );
+      ->new( name => q{Timestamp}, specifier => q{RFC3339} );
 
     $self->{item_tally} = FileCatalog::Manifest::Field
       ->new( name => q{Tally}, specifier => q{Items} );

@@ -77,42 +77,42 @@ sub path {
                 $ctime, $blksize, $blocks
             ) = lstat( $path ) or die( "Cannot stat $path" );;
 
-            my $manifest;
+            my $entry;
 
             given ( S_IFMT($mode) ) {
 
                 when (S_IFREG) {
-                    $manifest =
+                    $entry =
                       FileCatalog::Manifest::RegularFile->new( path => $path );
 
                     my $utc = DateTime->from_epoch( epoch => $mtime )
                       ->set_time_zone( 'UTC' );
                     my $rfc2822 = DateTime::Format::Mail->new;
                     my $rfc3339 = DateTime::Format::RFC3339->new;
-                    $manifest->mtime_rfc2822( $rfc2822
+                    $entry->mtime_rfc2822( $rfc2822
                                               ->format_datetime( $utc ) );
-                    $manifest->mtime_rfc3339( $rfc3339
+                    $entry->mtime_rfc3339( $rfc3339
                                               ->format_datetime( $utc ) );
                     
-                    $manifest->exact_size($size);
+                    $entry->exact_size($size);
                     my $nf = Number::Format->new;
                     my $common = $nf->format_bytes( $size, mode => 'iec',
                                                     precision => 1 );
-                    $manifest->common_size( $common );
+                    $entry->common_size( $common );
 
-                    $manifest->sha256(
+                    $entry->sha256(
                         pad_base64(
                             Digest::SHA->new(q{SHA-256})->addfile($path)
                               ->b64digest
                         )
                     );
-                    $manifest->sha384(
+                    $entry->sha384(
                         pad_base64(
                             Digest::SHA->new(q{SHA-384})->addfile($path)
                               ->b64digest
                         )
                     );
-                    $manifest->sha512(
+                    $entry->sha512(
                         pad_base64(
                             Digest::SHA->new(q{SHA-512})->addfile($path)
                               ->b64digest
@@ -120,40 +120,40 @@ sub path {
                     );
 
                     my $info = File::LibMagic->new->info_from_filename($path);
-                    $manifest->magic( $info->{description} );
-                    $manifest->mime_type( $info->{mime_type} );
-                    $manifest->encoding( $info->{encoding} );
+                    $entry->magic( $info->{description} );
+                    $entry->mime_type( $info->{mime_type} );
+                    $entry->encoding( $info->{encoding} );
 
                 }
 
                 when (S_IFDIR) {
-                    $manifest =
+                    $entry =
                       FileCatalog::Manifest::Directory->new( path => $path );
                 }
 
                 when (S_IFLNK) {
-                    $manifest =
+                    $entry =
                       FileCatalog::Manifest::SymbolicLink->new( path => $path );
-                    $manifest->destination( readlink $path );
+                    $entry->destination( readlink $path );
                 }
 
                 when (S_IFCHR) {
-                    $manifest = FileCatalog::Manifest::CharacterDevice->new(
+                    $entry = FileCatalog::Manifest::CharacterDevice->new(
                         path => $path );
                 }
 
                 when (S_IFBLK) {
-                    $manifest =
+                    $entry =
                       FileCatalog::Manifest::BlockDevice->new( path => $path );
                 }
 
                 when (S_IFIFO) {
-                    $manifest =
+                    $entry =
                       FileCatalog::Manifest::Fifo->new( path => $path );
                 }
 
                 when (S_IFSOCK) {
-                    $manifest =
+                    $entry =
                       FileCatalog::Manifest::Socket->new( path => $path );
                 }
 
@@ -162,13 +162,13 @@ sub path {
                 }
             }
 
-            $manifest->mode( sprintf "%04o", S_IMODE($mode) );
-            $manifest->owner( getpwuid $uid );
-            $manifest->group( getgrgid $gid );
-            $manifest->uid($uid);
-            $manifest->gid($gid);
+            $entry->mode( sprintf "%04o", S_IMODE($mode) );
+            $entry->owner( getpwuid $uid );
+            $entry->group( getgrgid $gid );
+            $entry->uid($uid);
+            $entry->gid($gid);
 
-            $self->{manifest} = $manifest;
+            $self->{entry} = $entry;
         }
     }
     return $self->{path};
@@ -176,24 +176,24 @@ sub path {
 
 sub type {
     my $self = shift;
-    if ( exists $self->{manifest} ) {
-      return $self->{manifest}->type;
+    if ( exists $self->{entry} ) {
+      return $self->{entry}->type;
     }
     return $EMPTY;
 }
 
 sub as_list {
     my $self = shift;
-    if ( exists $self->{manifest} ) {
-      return $self->{manifest}->as_list;
+    if ( exists $self->{entry} ) {
+      return $self->{entry}->as_list;
     }
     return ();
 }
 
 sub extra_info {
     my $self = shift;
-    if ( exists $self->{manifest} ) {
-      return $self->{manifest}->extra_info;
+    if ( exists $self->{entry} ) {
+      return $self->{entry}->extra_info;
     }
     return ();
 }

@@ -50,7 +50,7 @@ sub new {
     my $rfc2822 = DateTime::Format::Mail->new;
     my $rfc3339 = DateTime::Format::RFC3339->new;
     $header->timestamp_rfc2822( $rfc2822->format_datetime( $now ) );
-    $header->timestamp_rfc3339( $rfc3339->format_datetime( $now ) );
+#    $header->timestamp_rfc3339( $rfc3339->format_datetime( $now ) );
 
     return $self;
 }
@@ -62,9 +62,7 @@ sub as_list {
     
     my @LINES = ();
     
-    push( @LINES, '--------------------- Envelope Only ---------------------' );
     push( @LINES, $header->as_list );
-    push( @LINES, '------------------ Validated From Here ------------------' );
 
     return @LINES;
 }

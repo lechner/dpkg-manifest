@@ -73,11 +73,14 @@ sub specifier {
 
 sub to_string {
     my $self = shift;
-    return $self->name . $COLON . $SPACE
-      . ( $self->specifier
-          ? $LEFT_SQUARE . $self->specifier . $RIGHT_SQUARE . $SPACE
-          : $EMPTY )
-      . $self->value;
+    if(length $self->value ) {
+      return $self->name . $COLON . $SPACE
+        . ( $self->specifier
+            ? $LEFT_SQUARE . $self->specifier . $RIGHT_SQUARE . $SPACE
+            : $EMPTY )
+        . $self->value;
+    }
+    return $EMPTY;
 }
 
 sub print {

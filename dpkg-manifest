@@ -61,7 +61,7 @@ my $title = undef;
 # # links
 # $include->{$LINK}{$DESTINATION} = 1;
 
-my $extra_info = 1;
+my $extra_info = 0;
 
 my $catalog = FileCatalog::Catalog->new;
 
