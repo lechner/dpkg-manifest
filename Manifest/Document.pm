@@ -28,12 +28,11 @@ no if $] >= 5.018, warnings => 'experimental::smartmatch';
 use Carp;
 use Const::Fast;
 use Cwd;
-use SHARYANTO::String::Util qw(trim);
-use List::Util qw(min max);
 use File::Find::Rule;
 
 use Manifest::Envelope;
 use Manifest::ValidatedItem;
+use Manifest::Label::HorizontalSeparator;
 
 our $VERSION = '0';
 
@@ -100,41 +99,29 @@ sub take_inventory {
     return;
 }
 
-sub label {
-    my ( $self, $separator, $pad, $text, $width ) = @_;
-
-    my $trimmed = trim $text;
-
-    my $sides     = $width - length $trimmed;
-    my $rightside = max( 0, int( $ONE_HALF + $sides / 2 ) );
-    my $leftside  = max( 0, $sides - $rightside );
-
-    my $leftline  = $separator x max( 0, $leftside - $pad );
-    my $rightline = $separator x max( 0, $rightside - $pad );
-
-    my $leftpad  = $SPACE x max( 0, min( $pad, $leftside - $pad ) );
-    my $rightpad = $SPACE x max( 0, min( $pad, $rightside - $pad ) );
-
-    return $leftline . $leftpad . $trimmed . $rightpad . $rightline;
-}
-
 sub as_list {
     my ( $self, $print_extra_info ) = @_;
 
     my @LINES = ();
 
+    my $new_section = Manifest::Label::HorizontalSeparator
+        ->new( separator => $DASH, pad_width => 1, line_width => 72 );
+
     my @ENVELOPE_LINES = $self->{Envelope}->as_list;
 
     if ( scalar @ENVELOPE_LINES ) {
-        push @LINES,
-          $self->label( $DASH, 1, 'Shipping Manifest', $LABEL_WIDTH );
+        push @LINES, $new_section->label( 'Shipping Manifest' );
         push @LINES, @ENVELOPE_LINES;
-        push @LINES,
-          $self->label( $DASH, 1, 'Validated From Here', $LABEL_WIDTH );
     }
+
+    push @LINES, $new_section->label( 'Origin Statement' );
 
     my @CATALOG_PATHS = sort keys %{ $self->{Items} };
     my $countdown     = scalar @CATALOG_PATHS;
+
+    if( $countdown > 0 ) {
+        push @LINES, $new_section->label( 'Packing List' );
+    }
 
     foreach my $path (@CATALOG_PATHS) {
         my $item = $self->{Items}{$path};
