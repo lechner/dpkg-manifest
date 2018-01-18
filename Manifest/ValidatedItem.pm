@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# FileCatalog::Item.pm
+# Manifest::ValidatedItem.pm
 #
 # Copyright © 2018 Felix Lechner <felix.lechner@lease-up.com>
 #
@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package FileCatalog::Item;
+package Manifest::ValidatedItem;
 
 use strict;
 use warnings;
@@ -33,13 +33,13 @@ use Fcntl ':mode';
 use File::LibMagic;
 use Const::Fast;
 
-use FileCatalog::Manifest::RegularFile;
-use FileCatalog::Manifest::SymbolicLink;
-use FileCatalog::Manifest::Directory;
-use FileCatalog::Manifest::CharacterDevice;
-use FileCatalog::Manifest::BlockDevice;
-use FileCatalog::Manifest::Fifo;
-use FileCatalog::Manifest::Socket;
+use Manifest::Item::RegularFile;
+use Manifest::Item::SymbolicLink;
+use Manifest::Item::Directory;
+use Manifest::Item::CharacterDevice;
+use Manifest::Item::BlockDevice;
+use Manifest::Item::Fifo;
+use Manifest::Item::Socket;
 
 our $VERSION = '0';
 
@@ -85,7 +85,7 @@ sub path {
 
                 when (S_IFREG) {
                     $entry =
-                      FileCatalog::Manifest::RegularFile->new( path => $path );
+                      Manifest::Item::RegularFile->new( path => $path );
 
                     my $utc = DateTime->from_epoch( epoch => $mtime )
                       ->set_time_zone('UTC');
@@ -131,32 +131,32 @@ sub path {
 
                 when (S_IFDIR) {
                     $entry =
-                      FileCatalog::Manifest::Directory->new( path => $path );
+                      Manifest::Item::Directory->new( path => $path );
                 }
 
                 when (S_IFLNK) {
                     $entry =
-                      FileCatalog::Manifest::SymbolicLink->new( path => $path );
+                      Manifest::Item::SymbolicLink->new( path => $path );
                     $entry->destination( readlink $path );
                 }
 
                 when (S_IFCHR) {
-                    $entry = FileCatalog::Manifest::CharacterDevice->new(
+                    $entry = Manifest::Item::CharacterDevice->new(
                         path => $path );
                 }
 
                 when (S_IFBLK) {
                     $entry =
-                      FileCatalog::Manifest::BlockDevice->new( path => $path );
+                      Manifest::Item::BlockDevice->new( path => $path );
                 }
 
                 when (S_IFIFO) {
-                    $entry = FileCatalog::Manifest::Fifo->new( path => $path );
+                    $entry = Manifest::Item::Fifo->new( path => $path );
                 }
 
                 when (S_IFSOCK) {
                     $entry =
-                      FileCatalog::Manifest::Socket->new( path => $path );
+                      Manifest::Item::Socket->new( path => $path );
                 }
 
                 default {

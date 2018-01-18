@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# FileCatalog::Manifest::CharacterDevice.pm
+# Manifest::Item::BlockDevice.pm
 #
 # Copyright © 2018 Felix Lechner <felix.lechner@lease-up.com>
 #
@@ -17,12 +17,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package FileCatalog::Manifest::CharacterDevice;
+package Manifest::Item::BlockDevice;
 
 use strict;
 use warnings;
 
-use parent 'FileCatalog::Manifest::File';
+use parent 'Manifest::Item::File';
 
 our $VERSION = '0';
 
@@ -30,7 +30,7 @@ sub new {
     my ( $class, %args ) = @_;
     my $self = $class->SUPER::new(%args);
 
-    $self->type(q{Character Device});
+    $self->type(q{Block Device});
     return $self;
 }
 

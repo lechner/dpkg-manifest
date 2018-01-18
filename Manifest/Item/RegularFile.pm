@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# FileCatalog::Manifest::RegularFile.pm
+# Manifest::Item::RegularFile.pm
 #
 # Copyright © 2018 Felix Lechner <felix.lechner@lease-up.com>
 #
@@ -17,14 +17,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package FileCatalog::Manifest::RegularFile;
+package Manifest::Item::RegularFile;
 
 use strict;
 use warnings;
-
-use parent 'FileCatalog::Manifest::File';
-
 use Const::Fast;
+
+use parent 'Manifest::Item::File';
 
 our $VERSION = '0';
 
@@ -37,41 +36,39 @@ sub new {
 
     $self->type(q{Regular});
 
-    $self->{sha256} = FileCatalog::Manifest::Field->new(
-        name      => $CONTENT_DIGEST,
-        specifier => q{SHA-256}
+    $self->{sha256} = Manifest::Field::AnnotatedText->new(
+        label      => $CONTENT_DIGEST,
+        note => q{SHA-256}
     );
-    $self->{sha384} = FileCatalog::Manifest::Field->new(
-        name      => $CONTENT_DIGEST,
-        specifier => q{SHA-384}
+    $self->{sha384} = Manifest::Field::AnnotatedText->new(
+        label      => $CONTENT_DIGEST,
+        note => q{SHA-384}
     );
-    $self->{sha512} = FileCatalog::Manifest::Field->new(
-        name      => $CONTENT_DIGEST,
-        specifier => q{SHA-512}
-    );
-
-    $self->{exact_size} = FileCatalog::Manifest::Field->new(
-        name      => q{Content-Size},
-        specifier => q{bytes}
-    );
-    $self->{common_size} = FileCatalog::Manifest::Field->new(
-        name      => q{Content-Size},
-        specifier => q{easy}
-    );
-    $self->{mtime_rfc2822} = FileCatalog::Manifest::Field->new(
-        name      => q{Last-Modified},
-        specifier => q{RFC2822}
-    );
-    $self->{mtime_rfc3339} = FileCatalog::Manifest::Field->new(
-        name      => q{Last-Modified},
-        specifier => q{RFC3339}
+    $self->{sha512} = Manifest::Field::AnnotatedText->new(
+        label      => $CONTENT_DIGEST,
+        note => q{SHA-512}
     );
 
-    $self->{magic} = FileCatalog::Manifest::Field->new( name => q{Magic} );
-    $self->{mime_type} =
-      FileCatalog::Manifest::Field->new( name => q{Mime-Type} );
-    $self->{encoding} =
-      FileCatalog::Manifest::Field->new( name => q{Encoding} );
+    $self->{exact_size} = Manifest::Field::AnnotatedText->new(
+        label      => q{Content-Size},
+        note => q{bytes}
+    );
+    $self->{common_size} = Manifest::Field::AnnotatedText->new(
+        label      => q{Content-Size},
+        note => q{easy}
+    );
+    $self->{mtime_rfc2822} = Manifest::Field::AnnotatedText->new(
+        label      => q{Last-Modified},
+        note => q{RFC2822}
+    );
+    $self->{mtime_rfc3339} = Manifest::Field::AnnotatedText->new(
+        label      => q{Last-Modified},
+        note => q{RFC3339}
+    );
+
+    $self->{magic} = Manifest::Field::Text->new( label => q{Magic} );
+    $self->{mime_type} = Manifest::Field::Text->new( label => q{Mime-Type} );
+    $self->{encoding} = Manifest::Field::Text->new( label => q{Encoding} );
 
     $self->set_value_from_args( 'sha256',        %args );
     $self->set_value_from_args( 'sha384',        %args );
@@ -89,62 +86,62 @@ sub new {
 
 sub sha256 {
     my $self = shift;
-    if (@_) { $self->{sha256}->value(shift); }
-    return $self->{sha256}->value;
+    if (@_) { $self->{sha256}->text(shift); }
+    return $self->{sha256}->text;
 }
 
 sub sha384 {
     my $self = shift;
-    if (@_) { $self->{sha384}->value(shift); }
-    return $self->{sha384}->value;
+    if (@_) { $self->{sha384}->text(shift); }
+    return $self->{sha384}->text;
 }
 
 sub sha512 {
     my $self = shift;
-    if (@_) { $self->{sha512}->value(shift); }
-    return $self->{sha512}->value;
+    if (@_) { $self->{sha512}->text(shift); }
+    return $self->{sha512}->text;
 }
 
 sub exact_size {
     my $self = shift;
-    if (@_) { $self->{exact_size}->value(shift); }
-    return $self->{exact_size}->value;
+    if (@_) { $self->{exact_size}->text(shift); }
+    return $self->{exact_size}->text;
 }
 
 sub common_size {
     my $self = shift;
-    if (@_) { $self->{common_size}->value(shift); }
-    return $self->{common_size}->value;
+    if (@_) { $self->{common_size}->text(shift); }
+    return $self->{common_size}->text;
 }
 
 sub mtime_rfc2822 {
     my $self = shift;
-    if (@_) { $self->{mtime_rfc2822}->value(shift); }
-    return $self->{mtime_rfc2822}->value;
+    if (@_) { $self->{mtime_rfc2822}->text(shift); }
+    return $self->{mtime_rfc2822}->text;
 }
 
 sub mtime_rfc3339 {
     my $self = shift;
-    if (@_) { $self->{mtime_rfc3339}->value(shift); }
-    return $self->{mtime_rfc3339}->value;
+    if (@_) { $self->{mtime_rfc3339}->text(shift); }
+    return $self->{mtime_rfc3339}->text;
 }
 
 sub magic {
     my $self = shift;
-    if (@_) { $self->{magic}->value(shift); }
-    return $self->{magic}->value;
+    if (@_) { $self->{magic}->text(shift); }
+    return $self->{magic}->text;
 }
 
 sub mime_type {
     my $self = shift;
-    if (@_) { $self->{mime_type}->value(shift); }
-    return $self->{mime_type}->value;
+    if (@_) { $self->{mime_type}->text(shift); }
+    return $self->{mime_type}->text;
 }
 
 sub encoding {
     my $self = shift;
-    if (@_) { $self->{encoding}->value(shift); }
-    return $self->{encoding}->value;
+    if (@_) { $self->{encoding}->text(shift); }
+    return $self->{encoding}->text;
 }
 
 sub extra_info {

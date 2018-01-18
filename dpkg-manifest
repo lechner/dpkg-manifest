@@ -27,7 +27,7 @@ use Carp;
 use Const::Fast;
 
 use lib q{.};
-use FileCatalog::Catalog;
+use Manifest::Document;
 
 our $VERSION = '0';
 
@@ -63,7 +63,7 @@ my $title = undef;
 
 my $extra_info = 0;
 
-my $catalog = FileCatalog::Catalog->new;
+my $catalog = Manifest::Document->new;
 
 $catalog->take_inventory($where);
 
@@ -71,6 +71,6 @@ $catalog->take_inventory($where);
 
 # output results
 my @OUTPUT = $catalog->as_list($extra_info);
--print join( $NEWLINE, @OUTPUT ) . $NEWLINE;
+print join( $NEWLINE, @OUTPUT ) . $NEWLINE;
 
 #$catalog->print;

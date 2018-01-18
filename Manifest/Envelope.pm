@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# FileCatalog::Manifest::SymbolicLink.pm
+# Manifest::Envelope.pm
 #
 # Copyright © 2018 Felix Lechner <felix.lechner@lease-up.com>
 #
@@ -17,44 +17,52 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package FileCatalog::Manifest::SymbolicLink;
+package Manifest::Envelope;
 
 use strict;
 use warnings;
 
-use parent 'FileCatalog::Manifest::File';
+use feature qw(switch);
+no if $] >= 5.018, warnings => 'experimental::smartmatch';
 
+use Carp;
 use Const::Fast;
+use DateTime::Format::RFC3339;
+use DateTime::Format::Mail;
+
+use Manifest::Header;
 
 our $VERSION = '0';
-const my $EMPTY => q{};
+
+const my $EMPTY   => q{};
+const my $DOT     => q{.};
+const my $SLASH   => q{/};
+const my $NEWLINE => qq{\n};
 
 sub new {
     my ( $class, %args ) = @_;
-    my $self = $class->SUPER::new(%args);
+    my $self = bless {}, $class;
 
-    $self->type(q{Link});
+    $self->{Header} = Manifest::Header->new(%args);
+    my $header = $self->{Header};
 
-    $self->{destination} =
-      FileCatalog::Manifest::Field->new( name => q{Destination} );
-
-    $self->set_value_from_args( 'destination', %args );
+    my $now     = DateTime->now->set_time_zone('UTC');
+    my $rfc2822 = DateTime::Format::Mail->new;
+    my $rfc3339 = DateTime::Format::RFC3339->new;
+    $header->timestamp_rfc2822( $rfc2822->format_datetime($now) );
+    #    $header->timestamp_rfc3339( $rfc3339->format_datetime( $now ) );
 
     return $self;
 }
 
-sub destination {
-    my $self = shift;
-    if (@_) { $self->{destination}->value(shift); }
-    return $self->{destination}->value;
-}
-
 sub as_list {
-    my $self  = shift;
-    my @LINES = $self->SUPER::as_list;
+    my $self = shift;
 
-    my $destination = $self->{destination}->to_string;
-    if ( length $destination ) { push @LINES, $destination; }
+    my $header = $self->{Header};
+
+    my @LINES = ();
+
+    push @LINES, $header->as_list;
 
     return @LINES;
 }

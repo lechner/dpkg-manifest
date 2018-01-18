@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# FileCatalog::Envelope.pm
+# Manifest::Item::SymbolicLink.pm
 #
 # Copyright © 2018 Felix Lechner <felix.lechner@lease-up.com>
 #
@@ -17,53 +17,43 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package FileCatalog::Envelope;
+package Manifest::Item::SymbolicLink;
 
 use strict;
 use warnings;
-
-use feature qw(switch);
-no if $] >= 5.018, warnings => 'experimental::smartmatch';
-
-use Carp;
 use Const::Fast;
-use DateTime::Format::RFC3339;
-use DateTime::Format::Mail;
 
-use FileCatalog::Manifest::Header;
+use parent 'Manifest::Item::File';
 
 our $VERSION = '0';
 
-const my $EMPTY   => q{};
-const my $DOT     => q{.};
-const my $SLASH   => q{/};
-const my $NEWLINE => qq{\n};
+const my $EMPTY => q{};
 
 sub new {
     my ( $class, %args ) = @_;
-    my $self = bless {}, $class;
+    my $self = $class->SUPER::new(%args);
 
-    $self->{Header} = FileCatalog::Manifest::Header->new(%args);
-    my $header = $self->{Header};
+    $self->type(q{Link});
 
-    my $now     = DateTime->now->set_time_zone('UTC');
-    my $rfc2822 = DateTime::Format::Mail->new;
-    my $rfc3339 = DateTime::Format::RFC3339->new;
-    $header->timestamp_rfc2822( $rfc2822->format_datetime($now) );
+    $self->{destination} =
+      Manifest::Field::Text->new( label => q{Destination} );
 
-    #    $header->timestamp_rfc3339( $rfc3339->format_datetime( $now ) );
+    $self->set_value_from_args( 'destination', %args );
 
     return $self;
 }
 
-sub as_list {
+sub destination {
     my $self = shift;
+    if (@_) { $self->{destination}->text(shift); }
+    return $self->{destination}->text;
+}
 
-    my $header = $self->{Header};
+sub as_list {
+    my $self  = shift;
 
-    my @LINES = ();
-
-    push @LINES, $header->as_list;
+    my @LINES = $self->SUPER::as_list;
+    push @LINES, $self->{destination}->as_list;
 
     return @LINES;
 }

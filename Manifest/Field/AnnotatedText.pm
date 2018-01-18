@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# FileCatalog::Manifest::Field.pm
+# Manifest::Field::AnnotatedText.pm
 #
 # Copyright © 2018 Felix Lechner <felix.lechner@lease-up.com>
 #
@@ -17,11 +17,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package FileCatalog::Manifest::Field;
+package Manifest::Field::AnnotatedText;
 
 use strict;
 use warnings;
 use Const::Fast;
+
+use parent 'Manifest::Field::Text';
 
 our $VERSION = '0';
 
@@ -30,59 +32,30 @@ const my $SPACE        => q{ };
 const my $COLON        => q{:};
 const my $LEFT_SQUARE  => q{[};
 const my $RIGHT_SQUARE => q{]};
-const my $NEWLINE      => qq{\n};
 
 sub new {
     my ( $class, %args ) = @_;
+    my $self = $class->SUPER::new(%args);
 
-    my $self = bless {}, $class;
-
-    $self->name( exists $args{name}           ? $args{name}      : $EMPTY );
-    $self->value( exists $args{value}         ? $args{value}     : $EMPTY );
-    $self->specifier( exists $args{specifier} ? $args{specifier} : $EMPTY );
-
+    $self->set_from_args( 'note', %args );
     return $self;
 }
 
-sub set_value_from_args {
-    my ( $self, $key, %elsewhere ) = @_;
-
-    if ( exists $elsewhere{$key} ) {
-        $self->value( $elsewhere{$key} );
-    }
-    return;
-}
-
-sub name {
+sub note {
     my $self = shift;
-    if (@_) { $self->{name} = shift; }
-    return $self->{name};
-}
-
-sub value {
-    my $self = shift;
-    if (@_) { $self->{value} = shift; }
-    return $self->{value};
-}
-
-sub specifier {
-    my $self = shift;
-    if (@_) { $self->{specifier} = shift; }
-    return $self->{specifier};
+    if (@_) { $self->{note} = shift; }
+    return $self->{note};
 }
 
 sub to_string {
     my $self = shift;
-    if ( length $self->value ) {
-        return
-            $self->name
-          . $COLON
-          . $SPACE
-          . (
-              $self->specifier
-            ? $LEFT_SQUARE . $self->specifier . $RIGHT_SQUARE . $SPACE
-            : $EMPTY
-          ) . $self->value;
+  
+    if ( length $self->text ) {
+        my $annotation = $self->note
+            ? $LEFT_SQUARE . $self->note . $RIGHT_SQUARE . $SPACE
+            : $EMPTY;
+
+        return $self->label . $COLON . $SPACE . $annotation . $self->text;
     }
     return $EMPTY;
 }

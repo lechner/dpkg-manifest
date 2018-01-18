@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# FileCatalog::Catalog.pm
+# Manifest::Document.pm
 #
 # Copyright © 2018 Felix Lechner <felix.lechner@lease-up.com>
 #
@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package FileCatalog::Catalog;
+package Manifest::Document;
 
 use strict;
 use warnings;
@@ -32,8 +32,8 @@ use SHARYANTO::String::Util qw(trim);
 use List::Util qw(min max);
 use File::Find::Rule;
 
-use FileCatalog::Envelope;
-use FileCatalog::Item;
+use Manifest::Envelope;
+use Manifest::ValidatedItem;
 
 our $VERSION = '0';
 
@@ -71,7 +71,7 @@ sub take_inventory {
     foreach my $system_path (@SYSTEM_PATHS) {
 
         my $catalog_path = $DOT . $SLASH . $system_path;
-        my $item = FileCatalog::Item->new( path => $catalog_path );
+        my $item = Manifest::ValidatedItem->new( path => $catalog_path );
 
         $self->{Items}{$catalog_path} = $item;
 
@@ -92,7 +92,7 @@ sub take_inventory {
         $item_tally += $tally->{$file_type};
     }
 
-    $self->{Envelope} = FileCatalog::Envelope->new(
+    $self->{Envelope} = Manifest::Envelope->new(
         title      => $title,
         version    => $version,
         item_tally => $item_tally
