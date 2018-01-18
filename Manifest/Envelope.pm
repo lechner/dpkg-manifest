@@ -27,11 +27,10 @@ no if $] >= 5.018, warnings => 'experimental::smartmatch';
 
 use Carp;
 use Const::Fast;
-use DateTime::Format::RFC3339;
-use DateTime::Format::Mail;
 
 use Manifest::Field::Text;
 use Manifest::Field::AnnotatedText;
+use Manifest::Field::Date;
 
 our $VERSION = '0';
 
@@ -52,14 +51,7 @@ sub new {
 
     $self->{title}   = Manifest::Field::Text->new( label => q{Title} );
     $self->{version} = Manifest::Field::Text->new( label => q{Version} );
-    $self->{timestamp_rfc2822} = Manifest::Field::AnnotatedText->new(
-        label      => q{Timestamp},
-        note => q{RFC2822}
-    );
-    $self->{timestamp_rfc3339} = Manifest::Field::AnnotatedText->new(
-        label      => q{Timestamp},
-        note => q{RFC3339}
-    );
+    $self->{timestamp} = Manifest::Field::Date->new( label => q{Timestamp} );
 
     $self->{item_tally} = Manifest::Field::AnnotatedText->new(
         label      => q{Tally},
@@ -69,15 +61,10 @@ sub new {
     #    $self->set_value_from_args( 'manifest_format', %args );
     $self->set_value_from_args( 'title',             %args );
     $self->set_value_from_args( 'version',           %args );
-#    $self->set_value_from_args( 'timestamp_rfc2822', %args );
-#    $self->set_value_from_args( 'timestamp_rfc3339', %args );
     $self->set_value_from_args( 'item_tally',        %args );
 
-    my $now     = DateTime->now->set_time_zone('UTC');
-    my $rfc2822 = DateTime::Format::Mail->new;
-    my $rfc3339 = DateTime::Format::RFC3339->new;
-    $self->timestamp_rfc2822( $rfc2822->format_datetime($now) );
-    #    $header->timestamp_rfc3339( $rfc3339->format_datetime( $now ) );
+    my $now = DateTime->now->set_time_zone('UTC');
+    $self->{timestamp}->date_time( $now );
 
     return $self;
 }
@@ -109,16 +96,10 @@ sub version {
     return $self->{version}->text;
 }
 
-sub timestamp_rfc2822 {
+sub timestamp {
     my $self = shift;
-    if (@_) { $self->{timestamp_rfc2822}->text(shift); }
-    return $self->{timestamp_rfc2822}->text;
-}
-
-sub timestamp_rfc3339 {
-    my $self = shift;
-    if (@_) { $self->{timestamp_rfc3339}->text(shift); }
-    return $self->{timestamp_rfc3339}->text;
+    if (@_) { $self->{timestamp}->date_time(shift); }
+    return $self->{timestamp_rfc2822}->date_time;
 }
 
 sub item_tally {
@@ -133,8 +114,7 @@ sub as_list {
 
     push @LINES, $self->{title}->as_list;
     push @LINES, $self->{version}->as_list;
-    push @LINES, $self->{timestamp_rfc2822}->as_list;
-    push @LINES, $self->{timestamp_rfc3339}->as_list;
+    push @LINES, $self->{timestamp}->as_list;
     push @LINES, $self->{manifest_format}->as_list;
     push @LINES, $self->{item_tally}->as_list;
 

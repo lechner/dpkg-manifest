@@ -26,8 +26,6 @@ use feature qw(switch);
 no if $] >= 5.018, warnings => 'experimental::smartmatch';
 
 use Digest::SHA;
-use DateTime::Format::RFC3339;
-use DateTime::Format::Mail;
 use Number::Format;
 use Fcntl ':mode';
 use File::LibMagic;
@@ -84,15 +82,10 @@ sub path {
             given ( S_IFMT($mode) ) {
 
                 when (S_IFREG) {
-                    $entry =
-                      Manifest::Item::RegularFile->new( path => $path );
-
+                    $entry = Manifest::Item::RegularFile->new( path => $path );
                     my $utc = DateTime->from_epoch( epoch => $mtime )
                       ->set_time_zone('UTC');
-                    my $rfc2822 = DateTime::Format::Mail->new;
-                    my $rfc3339 = DateTime::Format::RFC3339->new;
-                    $entry->mtime_rfc2822( $rfc2822->format_datetime($utc) );
-                    $entry->mtime_rfc3339( $rfc3339->format_datetime($utc) );
+                    $entry->mtime( $utc );
 
                     $entry->exact_size($size);
                     my $nf     = Number::Format->new;

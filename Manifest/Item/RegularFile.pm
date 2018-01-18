@@ -57,14 +57,7 @@ sub new {
         label      => q{Content-Size},
         note => q{easy}
     );
-    $self->{mtime_rfc2822} = Manifest::Field::AnnotatedText->new(
-        label      => q{Last-Modified},
-        note => q{RFC2822}
-    );
-    $self->{mtime_rfc3339} = Manifest::Field::AnnotatedText->new(
-        label      => q{Last-Modified},
-        note => q{RFC3339}
-    );
+    $self->{mtime} = Manifest::Field::Date->new(label => q{Last-Modified} );
 
     $self->{magic} = Manifest::Field::Text->new( label => q{Magic} );
     $self->{mime_type} = Manifest::Field::Text->new( label => q{Mime-Type} );
@@ -75,8 +68,7 @@ sub new {
     $self->set_value_from_args( 'sha512',        %args );
     $self->set_value_from_args( 'exact_size',    %args );
     $self->set_value_from_args( 'common_size',   %args );
-    $self->set_value_from_args( 'mtime_rfc2822', %args );
-    $self->set_value_from_args( 'mtime_rfc3339', %args );
+    $self->set_value_from_args( 'mtime',         %args );
     $self->set_value_from_args( 'magic',         %args );
     $self->set_value_from_args( 'mime_type',     %args );
     $self->set_value_from_args( 'emcoding',      %args );
@@ -114,16 +106,10 @@ sub common_size {
     return $self->{common_size}->text;
 }
 
-sub mtime_rfc2822 {
+sub mtime {
     my $self = shift;
-    if (@_) { $self->{mtime_rfc2822}->text(shift); }
-    return $self->{mtime_rfc2822}->text;
-}
-
-sub mtime_rfc3339 {
-    my $self = shift;
-    if (@_) { $self->{mtime_rfc3339}->text(shift); }
-    return $self->{mtime_rfc3339}->text;
+    if (@_) { $self->{mtime}->date_time(shift); }
+    return $self->{mtime}->date_time;
 }
 
 sub magic {
@@ -148,19 +134,11 @@ sub extra_info {
     my $self  = shift;
     my @LINES = ();
 
-    my $common_size   = $self->{common_size}->to_string;
-    my $magic         = $self->{magic}->to_string;
-    my $mime_type     = $self->{mime_type}->to_string;
-    my $encoding      = $self->{encoding}->to_string;
-    my $mtime_rfc2822 = $self->{mtime_rfc2822}->to_string;
-    my $mtime_rfc3339 = $self->{mtime_rfc3339}->to_string;
-
-    if ( length $magic )         { push @LINES, $magic; }
-    if ( length $mime_type )     { push @LINES, $mime_type; }
-    if ( length $encoding )      { push @LINES, $encoding; }
-    if ( length $common_size )   { push @LINES, $common_size; }
-    if ( length $mtime_rfc2822 ) { push @LINES, $mtime_rfc2822; }
-    if ( length $mtime_rfc3339 ) { push @LINES, $mtime_rfc3339; }
+    push @LINES, $self->{common_size}->as_list;
+    push @LINES, $self->{magic}->as_list;
+    push @LINES, $self->{mime_type}->as_list;
+    push @LINES, $self->{encoding}->as_list;
+    push @LINES, $self->{mtime}->as_list;
 
     push @LINES, $self->SUPER::extra_info;
 
@@ -171,15 +149,10 @@ sub as_list {
     my $self  = shift;
     my @LINES = $self->SUPER::as_list;
 
-    my $sha256     = $self->{sha256}->to_string;
-    my $sha384     = $self->{sha384}->to_string;
-    my $sha512     = $self->{sha512}->to_string;
-    my $exact_size = $self->{exact_size}->to_string;
-
-    if ( length $sha256 )     { push @LINES, $sha256; }
-    if ( length $sha384 )     { push @LINES, $sha384; }
-    if ( length $sha512 )     { push @LINES, $sha512; }
-    if ( length $exact_size ) { push @LINES, $exact_size; }
+    push @LINES, $self->{sha256}->as_list;
+    push @LINES, $self->{sha384}->as_list;
+    push @LINES, $self->{sha512}->as_list;
+    push @LINES, $self->{exact_size}->as_list;
 
     return @LINES;
 }
