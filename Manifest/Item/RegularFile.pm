@@ -22,6 +22,7 @@ package Manifest::Item::RegularFile;
 use strict;
 use warnings;
 use Const::Fast;
+use Manifest::Field::SizeInBytes;
 
 use parent 'Manifest::Item::File';
 
@@ -49,9 +50,8 @@ sub new {
         note => q{SHA-512}
     );
 
-    $self->{exact_size} = Manifest::Field::AnnotatedText->new(
+    $self->{exact_size} = Manifest::Field::SizeInBytes->new(
         label      => q{Content-Size},
-        note => q{bytes}
     );
     $self->{common_size} = Manifest::Field::AnnotatedText->new(
         label      => q{Content-Size},
@@ -66,7 +66,7 @@ sub new {
     $self->set_value_from_args( 'sha256',        %args );
     $self->set_value_from_args( 'sha384',        %args );
     $self->set_value_from_args( 'sha512',        %args );
-    $self->set_value_from_args( 'exact_size',    %args );
+#    $self->set_value_from_args( 'exact_size',    %args );
     $self->set_value_from_args( 'common_size',   %args );
     $self->set_value_from_args( 'mtime',         %args );
     $self->set_value_from_args( 'magic',         %args );
@@ -96,8 +96,8 @@ sub sha512 {
 
 sub exact_size {
     my $self = shift;
-    if (@_) { $self->{exact_size}->text(shift); }
-    return $self->{exact_size}->text;
+    if (@_) { $self->{exact_size}->bytes(shift); }
+    return $self->{exact_size}->bytes;
 }
 
 sub common_size {
