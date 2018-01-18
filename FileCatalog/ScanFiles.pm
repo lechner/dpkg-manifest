@@ -17,7 +17,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-
 package FileCatalog::ScanFiles;
 
 our $VERSION = '0';
@@ -56,7 +55,7 @@ const my $MODE_TO_TYPE => {
 const my $BASE64_WORDSIZE => 4;
 
 sub pad_base64 {
-    my ( $padded ) = @_;
+    my ($padded) = @_;
     while ( length($padded) % $BASE64_WORDSIZE ) {
         $padded .= q{=};
     }
@@ -185,7 +184,6 @@ sub make_catalog {
 
     return $catalog;
 }
-
 
 __PACKAGE__;
 __END__

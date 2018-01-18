@@ -28,9 +28,9 @@ our $VERSION = '0';
 
 sub new {
     my ( $class, %args ) = @_;
-    my $self = $class->SUPER::new( %args );
+    my $self = $class->SUPER::new(%args);
 
-    $self->type( q{Block Device} );
+    $self->type(q{Block Device});
     return $self;
 }
 

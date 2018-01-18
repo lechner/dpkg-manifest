@@ -25,12 +25,12 @@ use Const::Fast;
 
 our $VERSION = '0';
 
-const my $EMPTY => q{};
-const my $SPACE => q{ };
-const my $COLON => q{:};
-const my $LEFT_SQUARE => q{[};
+const my $EMPTY        => q{};
+const my $SPACE        => q{ };
+const my $COLON        => q{:};
+const my $LEFT_SQUARE  => q{[};
 const my $RIGHT_SQUARE => q{]};
-const my $NEWLINE => qq{\n};
+const my $NEWLINE      => qq{\n};
 
 sub new {
     my ( $class, %args ) = @_;
@@ -45,12 +45,12 @@ sub new {
 }
 
 sub set_value_from_args {
-  my $self = shift;
-  my ($key, %elsewhere) = @_;
+    my $self = shift;
+    my ( $key, %elsewhere ) = @_;
 
-  if( exists $elsewhere{$key} ) {
-    $self->value( $elsewhere{$key} );
-  }
+    if ( exists $elsewhere{$key} ) {
+        $self->value( $elsewhere{$key} );
+    }
 }
 
 sub name {
@@ -73,12 +73,16 @@ sub specifier {
 
 sub to_string {
     my $self = shift;
-    if(length $self->value ) {
-      return $self->name . $COLON . $SPACE
-        . ( $self->specifier
+    if ( length $self->value ) {
+        return
+            $self->name
+          . $COLON
+          . $SPACE
+          . (
+              $self->specifier
             ? $LEFT_SQUARE . $self->specifier . $RIGHT_SQUARE . $SPACE
-            : $EMPTY )
-        . $self->value;
+            : $EMPTY
+          ) . $self->value;
     }
     return $EMPTY;
 }

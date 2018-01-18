@@ -17,7 +17,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-
 package FileCatalog::Manifest::Write;
 
 our $VERSION = '0';
@@ -142,7 +141,6 @@ sub write_manifest {
 
     return;
 }
-
 
 __PACKAGE__;
 __END__

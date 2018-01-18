@@ -34,23 +34,24 @@ use DateTime::Format::Mail;
 
 use FileCatalog::Manifest::Header;
 
-const my $EMPTY => q{};
-const my $DOT => q{.};
-const my $SLASH => q{/};
+const my $EMPTY   => q{};
+const my $DOT     => q{.};
+const my $SLASH   => q{/};
 const my $NEWLINE => qq{\n};
 
 sub new {
     my ( $class, %args ) = @_;
     my $self = bless( {}, $class );
 
-    $self->{Header} = FileCatalog::Manifest::Header->new( %args );
+    $self->{Header} = FileCatalog::Manifest::Header->new(%args);
     my $header = $self->{Header};
 
-    my $now = DateTime->now->set_time_zone( 'UTC' );
+    my $now     = DateTime->now->set_time_zone('UTC');
     my $rfc2822 = DateTime::Format::Mail->new;
     my $rfc3339 = DateTime::Format::RFC3339->new;
-    $header->timestamp_rfc2822( $rfc2822->format_datetime( $now ) );
-#    $header->timestamp_rfc3339( $rfc3339->format_datetime( $now ) );
+    $header->timestamp_rfc2822( $rfc2822->format_datetime($now) );
+
+    #    $header->timestamp_rfc3339( $rfc3339->format_datetime( $now ) );
 
     return $self;
 }
@@ -59,9 +60,9 @@ sub as_list {
     my $self = shift;
 
     my $header = $self->{Header};
-    
+
     my @LINES = ();
-    
+
     push( @LINES, $header->as_list );
 
     return @LINES;

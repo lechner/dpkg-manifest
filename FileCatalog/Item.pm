@@ -48,7 +48,7 @@ const my $EQUALS          => q{=};
 const my $BASE64_WORDSIZE => 4;
 
 sub pad_base64 {
-    my ( $padded ) = @_;
+    my ($padded) = @_;
     while ( length($padded) % $BASE64_WORDSIZE ) {
         $padded .= $EQUALS;
     }
@@ -75,7 +75,9 @@ sub path {
                 $dev,   $ino,     $mode, $nlink, $uid,
                 $gid,   $rdev,    $size, $atime, $mtime,
                 $ctime, $blksize, $blocks
-            ) = lstat( $path ) or die( "Cannot stat $path" );;
+              )
+              = lstat($path)
+              or die("Cannot stat $path");
 
             my $entry;
 
@@ -86,19 +88,20 @@ sub path {
                       FileCatalog::Manifest::RegularFile->new( path => $path );
 
                     my $utc = DateTime->from_epoch( epoch => $mtime )
-                      ->set_time_zone( 'UTC' );
+                      ->set_time_zone('UTC');
                     my $rfc2822 = DateTime::Format::Mail->new;
                     my $rfc3339 = DateTime::Format::RFC3339->new;
-                    $entry->mtime_rfc2822( $rfc2822
-                                              ->format_datetime( $utc ) );
-                    $entry->mtime_rfc3339( $rfc3339
-                                              ->format_datetime( $utc ) );
-                    
+                    $entry->mtime_rfc2822( $rfc2822->format_datetime($utc) );
+                    $entry->mtime_rfc3339( $rfc3339->format_datetime($utc) );
+
                     $entry->exact_size($size);
-                    my $nf = Number::Format->new;
-                    my $common = $nf->format_bytes( $size, mode => 'iec',
-                                                    precision => 1 );
-                    $entry->common_size( $common );
+                    my $nf     = Number::Format->new;
+                    my $common = $nf->format_bytes(
+                        $size,
+                        mode      => 'iec',
+                        precision => 1
+                    );
+                    $entry->common_size($common);
 
                     $entry->sha256(
                         pad_base64(
@@ -148,8 +151,7 @@ sub path {
                 }
 
                 when (S_IFIFO) {
-                    $entry =
-                      FileCatalog::Manifest::Fifo->new( path => $path );
+                    $entry = FileCatalog::Manifest::Fifo->new( path => $path );
                 }
 
                 when (S_IFSOCK) {
@@ -158,7 +160,7 @@ sub path {
                 }
 
                 default {
-                  croak( "Unknown file type $_" );
+                    croak("Unknown file type $_");
                 }
             }
 
@@ -177,7 +179,7 @@ sub path {
 sub type {
     my $self = shift;
     if ( exists $self->{entry} ) {
-      return $self->{entry}->type;
+        return $self->{entry}->type;
     }
     return $EMPTY;
 }
@@ -185,7 +187,7 @@ sub type {
 sub as_list {
     my $self = shift;
     if ( exists $self->{entry} ) {
-      return $self->{entry}->as_list;
+        return $self->{entry}->as_list;
     }
     return ();
 }
@@ -193,7 +195,7 @@ sub as_list {
 sub extra_info {
     my $self = shift;
     if ( exists $self->{entry} ) {
-      return $self->{entry}->extra_info;
+        return $self->{entry}->extra_info;
     }
     return ();
 }
@@ -201,18 +203,18 @@ sub extra_info {
 sub formatted {
     my $self = shift;
 
-    my ( $print_extra_info ) = @_;
+    my ($print_extra_info) = @_;
 
     my @LINES = ();
 
     push( @LINES, $self->as_list );
 
     my @EXTRA_INFO = $self->extra_info;
-    if ($print_extra_info && scalar @EXTRA_INFO) {
-      push( @LINES, '--- unverified data follows ---' );
-      push( @LINES, @EXTRA_INFO );
+    if ( $print_extra_info && scalar @EXTRA_INFO ) {
+        push( @LINES, '--- unverified data follows ---' );
+        push( @LINES, @EXTRA_INFO );
     }
-    
+
     return @LINES;
 }
 

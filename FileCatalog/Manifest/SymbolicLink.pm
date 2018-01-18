@@ -31,30 +31,30 @@ const my $EMPTY => q{};
 
 sub new {
     my ( $class, %args ) = @_;
-    my $self = $class->SUPER::new( %args );
+    my $self = $class->SUPER::new(%args);
 
-    $self->type( q{Link} );
+    $self->type(q{Link});
 
-    $self->{destination} = FileCatalog::Manifest::Field
-      ->new( name => q{Destination} );
+    $self->{destination} =
+      FileCatalog::Manifest::Field->new( name => q{Destination} );
 
-    $self->set_value_from_args( 'destination', %args);
+    $self->set_value_from_args( 'destination', %args );
 
     return $self;
 }
 
 sub destination {
     my $self = shift;
-    if (@_) { $self->{destination}->value( shift ); }
+    if (@_) { $self->{destination}->value(shift); }
     return $self->{destination}->value;
 }
 
 sub as_list {
-    my $self = shift;
+    my $self  = shift;
     my @LINES = $self->SUPER::as_list;
 
     my $destination = $self->{destination}->to_string;
-    if( length $destination ) { push( @LINES, $destination ); }
+    if ( length $destination ) { push( @LINES, $destination ); }
 
     return @LINES;
 }
