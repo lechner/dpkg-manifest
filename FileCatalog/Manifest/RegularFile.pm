@@ -158,14 +158,14 @@ sub extra_info {
     my $mtime_rfc2822 = $self->{mtime_rfc2822}->to_string;
     my $mtime_rfc3339 = $self->{mtime_rfc3339}->to_string;
 
-    if ( length $magic )         { push( @LINES, $magic ); }
-    if ( length $mime_type )     { push( @LINES, $mime_type ); }
-    if ( length $encoding )      { push( @LINES, $encoding ); }
-    if ( length $common_size )   { push( @LINES, $common_size ); }
-    if ( length $mtime_rfc2822 ) { push( @LINES, $mtime_rfc2822 ); }
-    if ( length $mtime_rfc3339 ) { push( @LINES, $mtime_rfc3339 ); }
+    if ( length $magic )         { push @LINES, $magic; }
+    if ( length $mime_type )     { push @LINES, $mime_type; }
+    if ( length $encoding )      { push @LINES, $encoding; }
+    if ( length $common_size )   { push @LINES, $common_size; }
+    if ( length $mtime_rfc2822 ) { push @LINES, $mtime_rfc2822; }
+    if ( length $mtime_rfc3339 ) { push @LINES, $mtime_rfc3339; }
 
-    push( @LINES, $self->SUPER::extra_info );
+    push @LINES, $self->SUPER::extra_info;
 
     return @LINES;
 }
@@ -179,10 +179,10 @@ sub as_list {
     my $sha512     = $self->{sha512}->to_string;
     my $exact_size = $self->{exact_size}->to_string;
 
-    if ( length $sha256 )     { push( @LINES, $sha256 ); }
-    if ( length $sha384 )     { push( @LINES, $sha384 ); }
-    if ( length $sha512 )     { push( @LINES, $sha512 ); }
-    if ( length $exact_size ) { push( @LINES, $exact_size ); }
+    if ( length $sha256 )     { push @LINES, $sha256; }
+    if ( length $sha384 )     { push @LINES, $sha384; }
+    if ( length $sha512 )     { push @LINES, $sha512; }
+    if ( length $exact_size ) { push @LINES, $exact_size; }
 
     return @LINES;
 }

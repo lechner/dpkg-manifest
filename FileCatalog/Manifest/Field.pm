@@ -35,7 +35,7 @@ const my $NEWLINE      => qq{\n};
 sub new {
     my ( $class, %args ) = @_;
 
-    my $self = bless( {}, $class );
+    my $self = bless {}, $class;
 
     $self->name( exists $args{name}           ? $args{name}      : $EMPTY );
     $self->value( exists $args{value}         ? $args{value}     : $EMPTY );
@@ -45,12 +45,12 @@ sub new {
 }
 
 sub set_value_from_args {
-    my $self = shift;
-    my ( $key, %elsewhere ) = @_;
+    my ( $self, $key, %elsewhere ) = @_;
 
     if ( exists $elsewhere{$key} ) {
         $self->value( $elsewhere{$key} );
     }
+    return;
 }
 
 sub name {
@@ -85,11 +85,6 @@ sub to_string {
           ) . $self->value;
     }
     return $EMPTY;
-}
-
-sub print {
-    my $self = shift;
-    print $self->to_string . $NEWLINE;
 }
 
 __PACKAGE__;

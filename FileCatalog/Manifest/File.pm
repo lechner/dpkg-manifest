@@ -32,7 +32,7 @@ const my $NEWLINE => qq{\n};
 
 sub new {
     my ( $class, %args ) = @_;
-    my $self = bless( {}, $class );
+    my $self = bless {}, $class;
 
     $self->{path}  = FileCatalog::Manifest::Field->new( name => q{Path} );
     $self->{type}  = FileCatalog::Manifest::Field->new( name => q{File-Type} );
@@ -54,8 +54,8 @@ sub new {
 }
 
 sub set_value_from_args {
-    my $self = shift;
-    my ( $field, %args ) = @_;
+    my ( $self, $field, %args ) = @_;
+
     if ( exists $self->{$field}
         && $self->{$field}->isa('FileCatalog::Manifest::Field') )
     {
@@ -116,11 +116,11 @@ sub extra_info {
     my $uid   = $self->{uid}->to_string;
     my $gid   = $self->{gid}->to_string;
 
-    if ( length $mode )  { push( @LINES, $mode ); }
-    if ( length $owner ) { push( @LINES, $owner ); }
-    if ( length $group ) { push( @LINES, $group ); }
-    if ( length $uid )   { push( @LINES, $uid ); }
-    if ( length $gid )   { push( @LINES, $gid ); }
+    if ( length $mode )  { push @LINES, $mode; }
+    if ( length $owner ) { push @LINES, $owner; }
+    if ( length $group ) { push @LINES, $group; }
+    if ( length $uid )   { push @LINES, $uid; }
+    if ( length $gid )   { push @LINES, $gid; }
 
     return @LINES;
 }
@@ -132,15 +132,10 @@ sub as_list {
     my $path = $self->{path}->to_string;
     my $type = $self->{type}->to_string;
 
-    if ( length $path ) { push( @LINES, $path ); }
-    if ( length $type ) { push( @LINES, $type ); }
+    if ( length $path ) { push @LINES, $path; }
+    if ( length $type ) { push @LINES, $type; }
 
     return @LINES;
-}
-
-sub print {
-    my $self = shift;
-    print join( $NEWLINE, $self->as_list ) . $NEWLINE;
 }
 
 __PACKAGE__;

@@ -30,15 +30,15 @@ our $VERSION = '0';
 
 const my $NEWLINE => qq{\n};
 
-const my $manifest_format => '0';
+const my $MANIFEST_FORMAT => '0';
 
 sub new {
     my ( $class, %args ) = @_;
-    my $self = bless( {}, $class );
+    my $self = bless {}, $class;
 
     $self->{manifest_format} = FileCatalog::Manifest::Field->new(
         name  => q{Manifest-Format},
-        value => $manifest_format
+        value => $MANIFEST_FORMAT
     );
 
     $self->{title}   = FileCatalog::Manifest::Field->new( name => q{Title} );
@@ -68,8 +68,8 @@ sub new {
 }
 
 sub set_value_from_args {
-    my $self = shift;
-    my ( $field, %args ) = @_;
+    my ( $self, $field, %args ) = @_;
+
     if ( exists $self->{$field}
         && $self->{$field}->isa('FileCatalog::Manifest::Field') )
     {
@@ -132,19 +132,14 @@ sub as_list {
     my $manifest_format   = $self->{manifest_format}->to_string;
     my $item_tally        = $self->{item_tally}->to_string;
 
-    if ( length $title )             { push( @LINES, $title ); }
-    if ( length $version )           { push( @LINES, $version ); }
-    if ( length $timestamp_rfc2822 ) { push( @LINES, $timestamp_rfc2822 ); }
-    if ( length $timestamp_rfc3339 ) { push( @LINES, $timestamp_rfc3339 ); }
-    if ( length $manifest_format )   { push( @LINES, $manifest_format ); }
-    if ( length $item_tally )        { push( @LINES, $item_tally ); }
+    if ( length $title )             { push @LINES, $title; }
+    if ( length $version )           { push @LINES, $version; }
+    if ( length $timestamp_rfc2822 ) { push @LINES, $timestamp_rfc2822; }
+    if ( length $timestamp_rfc3339 ) { push @LINES, $timestamp_rfc3339; }
+    if ( length $manifest_format )   { push @LINES, $manifest_format; }
+    if ( length $item_tally )        { push @LINES, $item_tally; }
 
     return @LINES;
-}
-
-sub print {
-    my $self = shift;
-    print join( $NEWLINE, $self->as_list ) . $NEWLINE;
 }
 
 __PACKAGE__;

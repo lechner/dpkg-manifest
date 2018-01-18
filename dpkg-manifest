@@ -17,13 +17,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-our $VERSION = '0';
-
 use strict;
 use warnings;
 
 use feature qw(switch);
-no if $] >= 5.018, warnings => "experimental::smartmatch";
+no if $] >= 5.018, warnings => 'experimental::smartmatch';
 
 use Carp;
 use Const::Fast;
@@ -31,12 +29,14 @@ use Const::Fast;
 use lib q{.};
 use FileCatalog::Catalog;
 
+our $VERSION = '0';
+
 const my $NEWLINE => qq{\n};
 
-my $numArgs = $#ARGV + 1;
+my $num_args = $#ARGV + 1;
 
 my $where = q{.};
-$where = $ARGV[0] if ( $numArgs == 1 );
+if ( $num_args == 1 ) { $where = $ARGV[0]; }
 
 my $title = undef;
 
@@ -71,6 +71,6 @@ $catalog->take_inventory($where);
 
 # output results
 my @OUTPUT = $catalog->as_list($extra_info);
-print join( $NEWLINE, @OUTPUT ) . $NEWLINE;
+-print join( $NEWLINE, @OUTPUT ) . $NEWLINE;
 
 #$catalog->print;

@@ -23,7 +23,7 @@ use strict;
 use warnings;
 
 use feature qw(switch);
-no if $] >= 5.018, warnings => "experimental::smartmatch";
+no if $] >= 5.018, warnings => 'experimental::smartmatch';
 
 use Digest::SHA;
 use DateTime::Format::RFC3339;
@@ -57,7 +57,7 @@ sub pad_base64 {
 
 sub new {
     my ( $class, %args ) = @_;
-    my $self = bless( {}, $class );
+    my $self = bless {}, $class;
 
     $self->path( exists $args{path} ? $args{path} : $EMPTY );
 
@@ -76,8 +76,8 @@ sub path {
                 $gid,   $rdev,    $size, $atime, $mtime,
                 $ctime, $blksize, $blocks
               )
-              = lstat($path)
-              or die("Cannot stat $path");
+              = lstat $path
+              or croak("Cannot stat $path");
 
             my $entry;
 
@@ -164,7 +164,7 @@ sub path {
                 }
             }
 
-            $entry->mode( sprintf "%04o", S_IMODE($mode) );
+            $entry->mode( sprintf '%04o', S_IMODE($mode) );
             $entry->owner( getpwuid $uid );
             $entry->group( getgrgid $gid );
             $entry->uid($uid);
@@ -201,26 +201,19 @@ sub extra_info {
 }
 
 sub formatted {
-    my $self = shift;
-
-    my ($print_extra_info) = @_;
+    my ( $self, $print_extra_info ) = @_;
 
     my @LINES = ();
 
-    push( @LINES, $self->as_list );
+    push @LINES, $self->as_list;
 
     my @EXTRA_INFO = $self->extra_info;
     if ( $print_extra_info && scalar @EXTRA_INFO ) {
-        push( @LINES, '--- unverified data follows ---' );
-        push( @LINES, @EXTRA_INFO );
+        push @LINES, '--- unverified data follows ---';
+        push @LINES, @EXTRA_INFO;
     }
 
     return @LINES;
-}
-
-sub print {
-    my $self = shift;
-    print $self->to_string;
 }
 
 __PACKAGE__;

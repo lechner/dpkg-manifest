@@ -19,13 +19,11 @@
 
 package FileCatalog::Envelope;
 
-our $VERSION = '0';
-
 use strict;
 use warnings;
 
 use feature qw(switch);
-no if $] >= 5.018, warnings => "experimental::smartmatch";
+no if $] >= 5.018, warnings => 'experimental::smartmatch';
 
 use Carp;
 use Const::Fast;
@@ -34,6 +32,8 @@ use DateTime::Format::Mail;
 
 use FileCatalog::Manifest::Header;
 
+our $VERSION = '0';
+
 const my $EMPTY   => q{};
 const my $DOT     => q{.};
 const my $SLASH   => q{/};
@@ -41,7 +41,7 @@ const my $NEWLINE => qq{\n};
 
 sub new {
     my ( $class, %args ) = @_;
-    my $self = bless( {}, $class );
+    my $self = bless {}, $class;
 
     $self->{Header} = FileCatalog::Manifest::Header->new(%args);
     my $header = $self->{Header};
@@ -63,14 +63,9 @@ sub as_list {
 
     my @LINES = ();
 
-    push( @LINES, $header->as_list );
+    push @LINES, $header->as_list;
 
     return @LINES;
-}
-
-sub print {
-    my $self = shift;
-    print join( $NEWLINE, $self->as_list ) . $NEWLINE;
 }
 
 __PACKAGE__;

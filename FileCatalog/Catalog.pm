@@ -19,13 +19,11 @@
 
 package FileCatalog::Catalog;
 
-our $VERSION = '0';
-
 use strict;
 use warnings;
 
 use feature qw(switch);
-no if $] >= 5.018, warnings => "experimental::smartmatch";
+no if $] >= 5.018, warnings => 'experimental::smartmatch';
 
 use Carp;
 use Const::Fast;
@@ -37,16 +35,20 @@ use File::Find::Rule;
 use FileCatalog::Envelope;
 use FileCatalog::Item;
 
-const my $EMPTY   => q{};
-const my $DOT     => q{.};
-const my $SLASH   => q{/};
-const my $SPACE   => q{ };
-const my $DASH    => q{-};
-const my $NEWLINE => qq{\n};
+our $VERSION = '0';
+
+const my $EMPTY       => q{};
+const my $DOT         => q{.};
+const my $SLASH       => q{/};
+const my $SPACE       => q{ };
+const my $DASH        => q{-};
+const my $NEWLINE     => qq{\n};
+const my $ONE_HALF    => 0.5;
+const my $LABEL_WIDTH => 72;
 
 sub new {
     my ( $class, %args ) = @_;
-    my $self = bless( {}, $class );
+    my $self = bless {}, $class;
 
     $self->{where} = exists $args{where} ? $args{where} : $EMPTY;
 
@@ -57,14 +59,12 @@ sub new {
 }
 
 sub take_inventory {
-    my $self = shift;
-
-    my ($where) = @_;
+    my ( $self, $where ) = @_;
 
     my $tally = $self->{Tally};
 
     my $savecwd = getcwd();
-    chdir($where) or croak("Cannot chdir to $where");
+    chdir $where or croak "Cannot chdir to $where";
 
     my @SYSTEM_PATHS = File::Find::Rule->not_name($DOT)->in($DOT);
 
@@ -82,10 +82,10 @@ sub take_inventory {
         $tally->{$file_type} += 1;
     }
 
-    chdir($savecwd) or croak( 'Cannot change back to directory ', $savecwd );
+    chdir $savecwd or croak "Cannot chdir back to $savecwd";
 
-    my $title   = "Upstream Release";
-    my $version = "3.2.3";
+    my $title   = 'Upstream Release';
+    my $version = '3.2.3';
 
     my $item_tally = 0;
     foreach my $file_type ( keys %{$tally} ) {
@@ -97,16 +97,16 @@ sub take_inventory {
         version    => $version,
         item_tally => $item_tally
     );
+    return;
 }
 
 sub label {
-    my $self = shift;
-    my ( $separator, $pad, $text, $width ) = @_;
+    my ( $self, $separator, $pad, $text, $width ) = @_;
 
     my $trimmed = trim $text;
 
     my $sides     = $width - length $trimmed;
-    my $rightside = max( 0, int( 0.5 + $sides / 2 ) );
+    my $rightside = max( 0, int( $ONE_HALF + $sides / 2 ) );
     my $leftside  = max( 0, $sides - $rightside );
 
     my $leftline  = $separator x max( 0, $leftside - $pad );
@@ -119,17 +119,18 @@ sub label {
 }
 
 sub as_list {
-    my $self = shift;
-    my ($print_extra_info) = @_;
+    my ( $self, $print_extra_info ) = @_;
 
     my @LINES = ();
 
     my @ENVELOPE_LINES = $self->{Envelope}->as_list;
 
     if ( scalar @ENVELOPE_LINES ) {
-        push( @LINES, $self->label( $DASH, 1, 'Shipping Manifest',   72 ) );
-        push( @LINES, @ENVELOPE_LINES );
-        push( @LINES, $self->label( $DASH, 1, 'Validated From Here', 72 ) );
+        push @LINES,
+          $self->label( $DASH, 1, 'Shipping Manifest', $LABEL_WIDTH );
+        push @LINES, @ENVELOPE_LINES;
+        push @LINES,
+          $self->label( $DASH, 1, 'Validated From Here', $LABEL_WIDTH );
     }
 
     my @CATALOG_PATHS = sort keys %{ $self->{Items} };
@@ -137,18 +138,13 @@ sub as_list {
 
     foreach my $path (@CATALOG_PATHS) {
         my $item = $self->{Items}{$path};
-        push( @LINES, $item->formatted($print_extra_info) );
+        push @LINES, $item->formatted($print_extra_info);
         $countdown -= 1;
-        if ( $countdown > 1 ) {
-            push( @LINES, $EMPTY );
+        if ( $countdown > 0 ) {
+            push @LINES, $EMPTY;
         }
     }
     return @LINES;
-}
-
-sub print {
-    my $self = shift;
-    print join( $NEWLINE, $self->as_list ) . $NEWLINE;
 }
 
 __PACKAGE__;

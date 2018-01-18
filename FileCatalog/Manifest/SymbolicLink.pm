@@ -54,7 +54,7 @@ sub as_list {
     my @LINES = $self->SUPER::as_list;
 
     my $destination = $self->{destination}->to_string;
-    if ( length $destination ) { push( @LINES, $destination ); }
+    if ( length $destination ) { push @LINES, $destination; }
 
     return @LINES;
 }
